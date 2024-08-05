@@ -78,6 +78,14 @@ MiniDeps.add({
 });
 ```
 
+### 🌒 Rocks.nvim
+
+You can install the plugin by running the following command.
+
+```vim
+:Rocks install helpview.nvim
+```
+
 ### Others
 
 Installation process for other plugin managers are similar.
