@@ -66,7 +66,6 @@ Mini.deps                                        *helpview-install-minideps*
 		}
 	});
 <
-
 ------------------------------------------------------------------------------
 Others
 
@@ -871,3 +870,4 @@ colors.mix(
 		• {string}        The hex color code of the resulting color.
 
 vim:ft=help:bt=help:textwidth=78:ts=4:nospell:
+
