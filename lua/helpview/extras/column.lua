@@ -44,7 +44,7 @@ column.draw = function (window, buffer)
 
 	local _o = "";
 
-	if vim.v.relnum == 0 and vim.v.virtnum == 0 then
+	if vim.v.relnum == 0 and vim.v.virtnum == 0 and vim.o.cursorline == true then
 		_o = "%#" .. "CursorLine" .. "#";
 	end
 

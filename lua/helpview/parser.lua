@@ -12,7 +12,7 @@ parser.get_str_type = function (str)
 	end
 end
 
-parser.vimdoc = function (buffer, TStree)
+parser.vimdoc = function (buffer, TStree, from, to)
 	local scanned_queies = vim.treesitter.query.parse("vimdoc", [[
 		([(h1)
 		  (h2)
@@ -53,7 +53,7 @@ parser.vimdoc = function (buffer, TStree)
 	-- 	vim.print(capture_id)
 	-- end
 
-	for capture_id, capture_node, _, _ in scanned_queies:iter_captures(TStree:root()) do
+	for capture_id, capture_node, _, _ in scanned_queies:iter_captures(TStree:root(), buffer, from, to) do
 		local capture_name = scanned_queies.captures[capture_id];
 		local capture_text = vim.treesitter.get_node_text(capture_node, buffer);
 		local row_start, col_start, row_end, col_end = capture_node:range();
@@ -134,7 +134,7 @@ parser.vimdoc = function (buffer, TStree)
 					row_start = row_start,
 					col_start = col_start,
 
-					row_end = row_end,
+					row_end = row_end - 1,
 					col_end = col_end
 				})
 			end
@@ -154,7 +154,7 @@ parser.vimdoc = function (buffer, TStree)
 				row_start = row_start,
 				col_start = col_start,
 
-				row_end = row_end,
+				row_end = row_end - 1,
 				col_end = col_end
 			})
 		elseif capture_name == "may_be_hl" then
@@ -344,7 +344,7 @@ parser.vimdoc = function (buffer, TStree)
 	end
 end
 
-parser.init = function (buffer)
+parser.init = function (buffer, from, to)
 	local root_parser = vim.treesitter.get_parser(buffer);
 	root_parser:parse();
 
@@ -354,7 +354,7 @@ parser.init = function (buffer)
 		local tree_language = language_tree:lang();
 
 		if tree_language == "vimdoc" then
-			parser.vimdoc(buffer, TStree);
+			parser.vimdoc(buffer, TStree, from, to);
 		end
 	end);
 

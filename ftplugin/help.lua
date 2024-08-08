@@ -36,71 +36,157 @@ vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
 			table.insert(helpview.attached_buffers, buffer);
 		end
 
+		-- On disable
 		if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
 			for _, window in ipairs(windows) do
-				if helpview.configuration.options and helpview.configuration.options.on_disable and pcall(helpview.configuration.options.on_disable, window, buffer) then
-					helpview.configuration.options.on_disable(window, buffer);
+				if helpview.configuration.callbacks and helpview.configuration.options.on_disable and pcall(helpview.configuration.callbacks.on_disable, window, buffer) then
+					helpview.configuration.callbacks.on_disable(window, buffer);
 				end
 			end
 
 			return;
+		-- On enable
 		else
 			for _, window in ipairs(windows) do
-				if helpview.configuration.options and helpview.configuration.options.on_enable and pcall(helpview.configuration.options.on_enable, window, buffer) then
-					helpview.configuration.options.on_enable(window, buffer);
+				if helpview.configuration.callbacks and helpview.configuration.callbacks.on_enable and pcall(helpview.configuration.callbacks.on_enable, window, buffer) then
+					helpview.configuration.callbacks.on_enable(window, buffer);
 				end
 			end
 
 			helpview.state.buf_states[buffer] = true;
 		end
 
-		local parsed_content = helpview.parser.init(buffer);
+		local cursor = vim.api.nvim_win_get_cursor(0);
+		local lines = vim.api.nvim_buf_line_count(event.buf);
 
-		-- helpview.column.cache(buffer, parsed_content);
-		helpview.renderer.clear(buffer)
-		helpview.renderer.render(buffer, parsed_content, helpview.configuration, helpview.get_buffer_info(buffer));
+		-- Don't render stuff others can't see
+		if lines > 1000 then
+			local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
+			local after = math.min(vim.api.nvim_buf_line_count(event.buf), cursor[1] + (helpview.configuration.parse_range or 100));
+
+			local parse = helpview.parser.init(event.buf, before, after);
+
+			helpview.renderer.clear(event.buf);
+			helpview.renderer.render(event.buf, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
+		else
+			local parse = helpview.parser.init(event.buf);
+
+			helpview.renderer.clear(event.buf);
+			helpview.renderer.render(event.buf, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
+		end
 	end
 });
 
-vim.api.nvim_create_autocmd({ "ModeChanged", "TextChanged", "WinResized" }, {
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
 	group = help_augroup,
 	buffer = vim.api.nvim_get_current_buf(),
 
 	callback = function (event)
+		local mode = vim.api.nvim_get_mode().mode;
 		local buffer = event.buf;
 
 		if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
 			return;
-		elseif helpview.state.buf_states[buffer] ~= true then
-			helpview.state.buf_states[buffer] = true;
 		end
 
-		local mode = vim.api.nvim_get_mode().mode;
+		if helpview.configuration.callbacks and helpview.configuration.callbacks.on_mode_change then
+			for _, win in ipairs(helpview.get_attached_wins(buffer)) do
+				pcall(helpview.configuration.callbacks.on_mode_change, buffer, win, mode);
+			end
+		end
 
-		local modifiable = vim.bo[buffer].modifiable;
+		if not vim.list_contains(helpview.configuration.modes, mode) then
+			helpview.renderer.clear(buffer);
+			return;
+		end
+
+		local cursor = vim.api.nvim_win_get_cursor(0);
 		local lines = vim.api.nvim_buf_line_count(buffer);
 
-		local window_lines = vim.o.lines;
+		if lines > 1000 then
+			local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
+			local after = math.min(lines, cursor[1] + (helpview.configuration.parse_range or 100));
 
-		if event.event ~= "WinResized" and modifiable == false or lines > (helpview.configuration.max_lines or 1000) then
-			local cursor = vim.api.nvim_win_get_cursor(0);
+			local parse = helpview.parser.init(buffer, before, after);
 
-			if vim.islist(helpview.configuration.modes) and vim.list_contains(helpview.configuration.modes, mode) then
-				helpview.renderer.partial_clear(buffer, cursor[1] - (helpview.configuration.render_lines or window_lines), cursor[1] + (helpview.configuration.render_lines or window_lines));
-				helpview.renderer.partial_render(buffer, cursor[1] - (helpview.configuration.render_lines or window_lines), cursor[1] + (helpview.configuration.render_lines or window_lines), helpview.configuration, helpview.get_buffer_info(buffer));
-			else
-				helpview.renderer.partial_clear(buffer, cursor[1] - (helpview.configuration.render_lines or window_lines), cursor[1] + (helpview.configuration.render_lines or window_lines));
-			end
+			helpview.renderer.clear(buffer);
+			helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
 		else
-			if vim.islist(helpview.configuration.modes) and vim.list_contains(helpview.configuration.modes, mode) then
-				local parsed_content = helpview.parser.init(buffer);
+			local parse = helpview.parser.init(buffer);
 
-				-- helpview.column.cache(buffer, parsed_content);
-				helpview.renderer.clear(buffer)
-				helpview.renderer.render(buffer, parsed_content, helpview.configuration, helpview.get_buffer_info(buffer));
-			else
-				helpview.renderer.clear(buffer)
-			end
+			helpview.renderer.clear(buffer);
+			helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
+		end
+
+		if not helpview.configuration.hybrid_modes or not vim.list_contains(helpview.configuration.hybrid_modes, mode) then
+			return;
 		end
 	end
 });
+
+local events = {};
+
+if vim.list_contains(helpview.configuration.modes, "n") or
+	vim.list_contains(helpview.configuration.modes, "v")
+then
+	table.insert(events, "CursorMoved");
+end
+
+if vim.list_contains(helpview.configuration.modes, "i") then
+	table.insert(events, "CursorMovedI");
+end
+
+local timer = vim.uv.new_timer();
+
+vim.api.nvim_create_autocmd(events, {
+	group = help_augroup,
+	buffer = vim.api.nvim_get_current_buf(),
+
+	callback = function (event)
+		timer:stop();
+		local mode = vim.api.nvim_get_mode().mode;
+		local buffer = event.buf;
+
+		if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
+			return;
+		end
+
+		if not vim.list_contains(helpview.configuration.modes, mode) then
+			return;
+		end
+
+		timer:start(100, 0, vim.schedule_wrap(function ()
+			local cursor = vim.api.nvim_win_get_cursor(0);
+			local lines = vim.api.nvim_buf_line_count(buffer);
+
+			if lines > 1000 then
+				local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
+				local after = math.min(vim.api.nvim_buf_line_count(buffer), cursor[1] + (helpview.configuration.parse_range or 100));
+
+				local parse = helpview.parser.init(buffer, before, after);
+
+				helpview.renderer.clear(buffer);
+				helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(buffer));
+			else
+				local parse = helpview.parser.init(buffer);
+
+				helpview.renderer.clear(buffer);
+				helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(buffer));
+			end
+
+			if not helpview.configuration.hybrid_modes or not vim.list_contains(helpview.configuration.hybrid_modes, mode) then
+				return;
+			end
+
+			local under_cursor = helpview.parser.init(buffer, math.max(cursor[1] - 1, 0), cursor[1]);
+			local cl_start, cl_stop = helpview.renderer.get_content_range(under_cursor);
+
+			if not cl_start or not cl_stop then
+				return;
+			end
+
+			helpview.renderer.clear(buffer, cl_start, cl_stop);
+		end));
+	end
+});
+

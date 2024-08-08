@@ -55,13 +55,20 @@ helpview.state = {
 
 helpview.configuration = {
 	modes = { "n", "c" },
+	hybrid_modes = nil,
 	-- buf_ignore = { "help" },
+	callbacks = {
+		on_enable = nil,
+		on_disable = nil,
+
+		on_mode_change = nil
+	},
 
 	highlight_groups = {
 		{
 			output = function ()
 				local bg = helpview.colors.get_hl_value(0, "Normal", "bg");
-				local inline_fg = helpview.colors.get_hl_value(0, "TablineSel", "fg");
+				local inline_fg = helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg");
 				local tag_fg = helpview.colors.get_hl_value(0, "Title", "fg");
 				local option_fg = helpview.colors.get_hl_value(0, "Tag", "fg");
 				local taglink_fg = helpview.colors.get_hl_value(0, "Title", "fg");
@@ -194,7 +201,7 @@ helpview.configuration = {
 		{
 			output = function ()
 				local from = helpview.colors.get_hl_value(0, "Normal", "bg") or "#1e1e2e";
-				local to = helpview.colors.get_hl_value(0, "rainbow4", "fg");
+				local to = helpview.colors.get_hl_value(0, "@character", "fg") or helpview.colors.get_hl_value(0, "@comment.note", "fg");
 
 				return helpview.colors.create_gradient("Gradient", from, to, 10, "fg")
 			end
@@ -211,11 +218,11 @@ helpview.configuration = {
 				"╰", "─", "╯"
 			},
 
-			hls = {
+			hl = {
 				"h1", "h1", "h1",
 				"h1", "h1", "h1",
 				"h1", "h1", "h1",
-			}
+			},
 		},
 		heading_2 = {
 			style = "decorated",
@@ -226,7 +233,7 @@ helpview.configuration = {
 				"╰", "─", "╼"
 			},
 
-			hls = {
+			hl = {
 				"h2", "h2", "h2",
 				"h2", "h2", "h2",
 				"h2", "h2", "h2",
@@ -239,9 +246,9 @@ helpview.configuration = {
 				"╾", "─", "╼"
 			},
 
-			hls = {
+			hl = {
 				"h3", "h3", "h3",
-			}
+			},
 		},
 	},
 	title = {
@@ -250,7 +257,7 @@ helpview.configuration = {
 			"│", " ", "│",
 			"╰", "─", "╯"
 		},
-		hls = {
+		hl = {
 			"Special", "Special", "Special",
 			"Special", "Special", "Special",
 			"Special", "Special", "Special",
