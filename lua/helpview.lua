@@ -57,6 +57,7 @@ helpview.configuration = {
 	modes = { "n", "c" },
 	hybrid_modes = nil,
 	-- buf_ignore = { "help" },
+
 	callbacks = {
 		on_enable = nil,
 		on_disable = nil,
@@ -64,46 +65,217 @@ helpview.configuration = {
 		on_mode_change = nil
 	},
 
+	---+ ##code##
 	highlight_groups = {
+		{
+			group_name = "Title",
+			value = function ()
+				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "bg") and
+					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "fg")
+				then
+					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "bg");
+					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "fg");
+
+					return { bg = bg, fg = fg, default = true };
+				else
+					local bg = helpview.colors.bg() or "#1e1e2e";
+					local fg = helpview.colors.get({
+						helpview.colors.get_hl_value(0, "DiagnosticWarn", "fg"),
+						vim.o.background == "dark" and "#f9e2af" or "#df8e18"
+					});
+
+					return {
+						bg = vim.o.background == "dark" and
+							helpview.colors.mix(bg, fg, 0.5, 0.15) or
+							helpview.colors.mix(bg, fg, 0.85, 0.20),
+						fg = fg,
+
+						default = true
+					}
+				end
+			end
+		},
+		{
+			group_name = "Heading1",
+			value = function ()
+				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "bg") and
+					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "fg")
+				then
+					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "bg");
+					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "fg");
+
+					return { bg = bg, fg = fg, default = true };
+				else
+					local bg = helpview.colors.bg() or "#1e1e2e";
+					local fg = helpview.colors.get({
+						helpview.colors.get_hl_value(0, "DiagnosticOk", "fg"),
+						vim.o.background == "dark" and "#a6e3a1" or "#40a02b"
+					});
+
+					return {
+						bg = vim.o.background == "dark" and
+							helpview.colors.mix(bg, fg, 0.5, 0.15) or
+							helpview.colors.mix(bg, fg, 0.85, 0.20),
+						fg = fg,
+
+						default = true
+					}
+				end
+			end
+		},
+		{
+			group_name = "Heading2",
+			value = function ()
+				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "bg") and
+					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "fg")
+				then
+					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "bg");
+					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "fg");
+
+					return { bg = bg, fg = fg, default = true };
+				else
+					local bg = helpview.colors.bg() or "#1e1e2e";
+					local fg = helpview.colors.get({
+						helpview.colors.get_hl_value(0, "DiagnosticHint", "fg"),
+						vim.o.background == "dark" and "#94e2d5" or "#179299"
+					});
+
+					return {
+						bg = vim.o.background == "dark" and
+							helpview.colors.mix(bg, fg, 0.5, 0.15) or
+							helpview.colors.mix(bg, fg, 0.85, 0.20),
+						fg = fg,
+
+						default = true
+					}
+				end
+			end
+		},
+		{
+			group_name = "Heading3",
+			value = function ()
+				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "bg") and
+					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "fg")
+				then
+					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "bg");
+					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "fg");
+
+					return { bg = bg, fg = fg, default = true };
+				else
+					local bg = helpview.colors.bg() or "#1e1e2e";
+					local fg = helpview.colors.get({
+						helpview.colors.get_hl_value(0, "DiagnosticInfo", "fg"),
+						vim.o.background == "dark" and "#89dceb" or "#179299"
+					});
+
+					return {
+						bg = vim.o.background == "dark" and
+							helpview.colors.mix(bg, fg, 0.5, 0.15) or
+							helpview.colors.mix(bg, fg, 0.85, 0.20),
+						fg = fg,
+
+						default = true
+					}
+				end
+			end
+		},
+		{
+			group_name = "Heading4",
+			value = function ()
+				if helpview.colors.get_hl_value(0, "Special", "bg") and
+					helpview.colors.get_hl_value(0, "Special", "fg")
+				then
+					local bg = helpview.colors.get_hl_value(0, "Special", "bg");
+					local fg = helpview.colors.get_hl_value(0, "Special", "fg");
+
+					return { bg = bg, fg = fg, default = true };
+				else
+					local bg = helpview.colors.bg() or "#1e1e2e";
+					local fg = helpview.colors.get({
+						helpview.colors.get_hl_value(0, "Special", "fg"),
+						vim.o.background == "dark" and "#f5c2e7" or "#ea76cb"
+					});
+
+					return {
+						bg = vim.o.background == "dark" and
+							helpview.colors.mix(bg, fg, 0.5, 0.15) or
+							helpview.colors.mix(bg, fg, 0.85, 0.20),
+						fg = fg,
+
+						default = true
+					}
+				end
+			end
+		},
+
+		{
+			output = function ()
+				local bg = helpview.colors.bg();
+				local fg = helpview.colors.get_hl_value(0, "Comment", "fg");
+
+				local luminosity = helpview.colors.get_brightness(bg);
+
+				if luminosity < 0.5 then
+					return {
+						{
+							group_name = "Code",
+							value = { bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)) }
+						},
+						{
+							group_name = "CodeLanguage",
+							value = {
+								bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)),
+								fg = fg
+							}
+						}
+					};
+				else
+					return {
+						{
+							group_name = "Code",
+							value = { bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1) }
+						},
+						{
+							group_name = "CodeLanguage",
+							value = {
+								bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1),
+								fg = fg
+							}
+						}
+					};
+				end
+			end
+		},
+		{
+			group_name = "InlineCode",
+			value = function ()
+				local bg = helpview.colors.bg();
+				local fg = helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg");
+
+				local luminosity = helpview.colors.get_brightness(bg);
+
+				if luminosity < 0.5 then
+					return {
+						bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.5)),
+						fg = fg
+					};
+				else
+					return {
+						bg = helpview.colors.mix(bg, bg, 1, math.min(luminosity, 0.15) * -1),
+						fg = fg
+					};
+				end
+			end
+		},
 		{
 			output = function ()
 				local bg = helpview.colors.get_hl_value(0, "Normal", "bg");
-				local inline_fg = helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg");
 				local tag_fg = helpview.colors.get_hl_value(0, "Title", "fg");
-				local option_fg = helpview.colors.get_hl_value(0, "Tag", "fg");
 				local taglink_fg = helpview.colors.get_hl_value(0, "Title", "fg");
-
-				local h1_fg = helpview.colors.get_hl_value(0, "rainbow2", "fg") or helpview.colors.get_hl_value(0, "Title", "fg");
-				local h2_fg = helpview.colors.get_hl_value(0, "rainbow3", "fg") or helpview.colors.get_hl_value(0, "WarningMsg", "fg");
-				local h3_fg = helpview.colors.get_hl_value(0, "rainbow4", "fg") or helpview.colors.get_hl_value(0, "TablineSel", "fg");
+				local option_fg = helpview.colors.get_hl_value(0, "Tag", "fg");
 
 				if vim.o.background == "dark" then
 					return {
-						{
-							group_name = "h1",
-							value = {
-								fg = h1_fg
-							}
-						},
-						{
-							group_name = "h2",
-							value = {
-								fg = h2_fg
-							}
-						},
-						{
-							group_name = "h3",
-							value = {
-								fg = h3_fg
-							}
-						},
-						{
-							group_name = "InlineCodes",
-							value = {
-								bg = helpview.colors.mix(inline_fg, bg, 0.25, 0.15),
-								fg = inline_fg
-							}
-						},
 						{
 							group_name = "Taglink",
 							value = {
@@ -111,14 +283,6 @@ helpview.configuration = {
 								fg = tag_fg
 							}
 						},
-						-- {
-						-- 	raw = true,
-						-- 	group_name = "@label.vimdoc",
-						-- 	value = {
-						-- 		bg = helpview.colors.mix(tag_fg, bg, 0.25, 0.15),
-						-- 		fg = tag_fg
-						-- 	}
-						-- },
 						{
 							group_name = "Optionlink",
 							value = {
@@ -129,35 +293,13 @@ helpview.configuration = {
 						{
 							group_name = "Mentionlink",
 							value = {
-								-- bg = helpview.colors.mix(taglink_fg, bg, 0.25, 0.15),
 								fg = taglink_fg,
 								underline = true
-							}
-						},
-
-						{
-							group_name = "CodeBlocks",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 0.5, 0.75),
-							}
-						},
-						{
-							group_name = "CodeBlocksLanguage",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 0.5, 0.75),
-								fg = inline_fg
 							}
 						},
 					}
 				else
 					return {
-						{
-							group_name = "InlineCodes",
-							value = {
-								bg = helpview.colors.mix(inline_fg, bg, 0.5, 0.65),
-								fg = inline_fg
-							}
-						},
 						{
 							group_name = "Taglink",
 							value = {
@@ -175,23 +317,8 @@ helpview.configuration = {
 						{
 							group_name = "Mentionlink",
 							value = {
-								-- bg = helpview.colors.mix(taglink_fg, bg, 0.5, 0.65),
 								fg = taglink_fg,
 								underline = true
-							}
-						},
-
-						{
-							group_name = "CodeBlocks",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 0.5, 0.75),
-							}
-						},
-						{
-							group_name = "CodeBlocksLanguage",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 0.5, 0.75),
-								fg = inline_fg
 							}
 						},
 					}
@@ -207,91 +334,7 @@ helpview.configuration = {
 			end
 		}
 	},
-
-	headings = {
-		heading_1 = {
-			style = "decorated",
-
-			parts = {
-				"╭", "─", "╮",
-				"│", " ", "",
-				"╰", "─", "╯"
-			},
-
-			hl = {
-				"h1", "h1", "h1",
-				"h1", "h1", "h1",
-				"h1", "h1", "h1",
-			},
-		},
-		heading_2 = {
-			style = "decorated",
-
-			parts = {
-				"╭", "─", "╼",
-				"│", " ", "",
-				"╰", "─", "╼"
-			},
-
-			hl = {
-				"h2", "h2", "h2",
-				"h2", "h2", "h2",
-				"h2", "h2", "h2",
-			}
-		},
-		heading_3 = {
-			style = "border",
-
-			parts = {
-				"╾", "─", "╼"
-			},
-
-			hl = {
-				"h3", "h3", "h3",
-			},
-		},
-	},
-	title = {
-		parts = {
-			"╭", "─", "╮",
-			"│", " ", "│",
-			"╰", "─", "╯"
-		},
-		hl = {
-			"Special", "Special", "Special",
-			"Special", "Special", "Special",
-			"Special", "Special", "Special",
-		},
-		title_hl = "Title",
-		description_hl = "Comment"
-	},
-
-	hls = {
-		enable = true,
-
-		conceal_before = 1, conceal_after = 1
-	},
-	tags = {
-		padding_left = " ",
-		padding_right = " ",
-
-		shift_before = 1,
-
-		hl = "HelpviewTaglink"
-	},
-	links = {
-		icon = " ",
-		hl = "HelpviewMentionlink"
-	},
-	option_links = {
-		padding_left = " ",
-		padding_right = " ",
-
-		icon = " ",
-		hl = "HelpviewOptionLink",
-
-		conceal_before = 1, conceal_after = 1
-	},
+	---_
 
 	arguments = {
 		icon = "󰂓 ",
@@ -300,37 +343,112 @@ helpview.configuration = {
 		conceal_before = 1, conceal_after = 1
 	},
 
+	code_blocks = {
+		hl = "HelpviewCode",
+		language_hl = "HelpviewCodeLanguage"
+	},
+
+	group_names = {
+		enable = true,
+
+		icon = "󰏘 ",
+	},
+
+	headings = {
+		heading_1 = {
+			style = "simple",
+			hl = "Heading1",
+			marker = "═",
+
+			sign = " "
+		},
+		heading_2 = {
+			style = "simple",
+			hl = "Heading2",
+			marker = "─",
+
+			sign = " "
+		},
+		heading_3 = {
+			style = "simple",
+			hl = "Heading3",
+
+			sign = " "
+		},
+		heading_4 = {
+			style = "simple",
+			hl = "Heading4",
+
+			sign = "󰓫 "
+		},
+	},
+
+	horizontal_rules = {
+		parts = {
+			{
+				type = "repeating",
+				repeat_amount = function (buf_info)
+					return math.floor((buf_info.width - 3) / 2);
+				end,
+
+				direction = "left",
+				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
+			},
+			{
+				type = "text",
+				text = "  ",
+
+				hl = "HelpviewGradient10"
+			},
+			{ -- Nerd font characters have 1.5x the width of
+			  -- normal text. So we add this half character
+				type = "text",
+				text = "╶",
+
+				hl = "HelpviewGradient6"
+			},
+			{
+				type = "repeating",
+				repeat_amount = function (buf_info)
+					return math.floor((buf_info.width - 3) / 2) - 1;
+				end,
+
+				direction = "right",
+				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
+			},
+		}
+	},
+
 	inline_codes = {
 		padding_left = " ",
 		padding_right = " ",
 
-		hl = "HelpviewInlineCodes"
+		hl = "HelpviewInlineCode"
 	},
-	key_codes = {
+
+	keycodes = {
 		icon = "󰌌 ",
-		hl = "Special"
+		hl = "Special",
+
+		conceal_before = function (data)
+			if data.extracted then
+				return 1;
+			else
+				return 0;
+			end
+		end,
+		conceal_after = function (data)
+			if data.extracted then
+				return 1;
+			else
+				return 0;
+			end
+		end,
 	},
 
-	code_blocks = {
-		hl = "HelpviewCodeBlocks",
-		language_hl = "HelpviewCodeBlocksLanguage"
-	},
-
-	notes = {
-		default = {
-			padding_right = " ",
-			icon = "   ", hl = "@comment.note"
-		},
-
-		warning = {
-			padding_right = " ",
-			icon = "   ", hl = "@comment.warning"
-		},
-
-		deprecated = {
-			padding_right = " ",
-			icon = "  ", hl = "@comment.error"
-		}
+	mention_links = {
+		icon = " ",
+		hl = "HelpviewMentionlink"
 	},
 
 	modelines = {
@@ -401,40 +519,43 @@ helpview.configuration = {
 		seperator_hl = "@punctuation.delimiter"
 	},
 
-	horizontal_rules = {
-		parts = {
-			{
-				type = "repeating",
-				repeat_amount = function (buf_info)
-					return math.floor((buf_info.width - 3) / 2);
-				end,
+	notes = {
+		default = {
+			padding_right = " ",
+			icon = "   ", hl = "@comment.note"
+		},
 
-				direction = "left",
-				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
-			},
-			{
-				type = "text",
-				text = "  ",
+		warning = {
+			padding_right = " ",
+			icon = "   ", hl = "@comment.warning"
+		},
 
-				hl = "HelpviewGradient10"
-			},
-			{ -- Nerd font characters have 1.5x the width of
-			  -- normal text. So we add this half character
-				type = "text",
-				text = "╶",
-
-				hl = "HelpviewGradient6"
-			},
-			{
-				type = "repeating",
-				repeat_amount = function (buf_info)
-					return math.floor((buf_info.width - 3) / 2) - 1;
-				end,
-
-				direction = "right",
-				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
-			},
+		deprecated = {
+			padding_right = " ",
+			icon = "  ", hl = "@comment.error"
 		}
+	},
+
+	option_links = {
+		padding_left = " ",
+		padding_right = " ",
+
+		icon = " ",
+		hl = "HelpviewOptionLink",
+
+		conceal_before = 1, conceal_after = 1
+	},
+
+	tag_links = {
+		padding_left = " ",
+		padding_right = " ",
+
+		hl = "HelpviewTaglink"
+	},
+
+	title = {
+		style = "simple",
+		hl = "HelpviewTitle",
 	}
 };
 
@@ -607,6 +728,12 @@ end, {
 		end
 	end
 })
+
+-- vim.api.nvim_create_user_command("H", function (data)
+-- 	vim.print("h");
+-- end, {
+-- 	desc = "Why?"
+-- })
 
 vim.api.nvim_create_autocmd({ "colorscheme" }, {
 	callback = function ()

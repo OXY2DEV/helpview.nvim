@@ -1,4 +1,5 @@
 local helpview = require("helpview");
+local cursor_pos = {};
 
 local ts_available, treesitter_parsers = pcall(require, "nvim-treesitter.parsers");
 
@@ -59,6 +60,9 @@ vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
 		local cursor = vim.api.nvim_win_get_cursor(0);
 		local lines = vim.api.nvim_buf_line_count(event.buf);
 
+		cursor_pos[vim.api.nvim_get_current_win()] = cursor;
+		helpview.renderer.clear(event.buf);
+
 		-- Don't render stuff others can't see
 		if lines > 1000 then
 			local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
@@ -66,12 +70,10 @@ vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
 
 			local parse = helpview.parser.init(event.buf, before, after);
 
-			helpview.renderer.clear(event.buf);
 			helpview.renderer.render(event.buf, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
 		else
 			local parse = helpview.parser.init(event.buf);
 
-			helpview.renderer.clear(event.buf);
 			helpview.renderer.render(event.buf, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
 		end
 	end
@@ -144,6 +146,8 @@ vim.api.nvim_create_autocmd(events, {
 
 	callback = function (event)
 		timer:stop();
+
+		local cursor = vim.api.nvim_win_get_cursor(0);
 		local mode = vim.api.nvim_get_mode().mode;
 		local buffer = event.buf;
 
@@ -155,8 +159,17 @@ vim.api.nvim_create_autocmd(events, {
 			return;
 		end
 
-		timer:start(100, 0, vim.schedule_wrap(function ()
-			local cursor = vim.api.nvim_win_get_cursor(0);
+		local debounce_delay = helpview.configuration.dsbounce_delay or 100;
+
+		--- Immediately draw if the distance is too big
+		if cursor_pos[vim.api.nvim_get_current_win()] and math.abs(cursor_pos[vim.api.nvim_get_current_win()][1] - cursor[1]) > vim.o.lines then
+			debounce_delay = 0;
+		end
+
+		cursor_pos[vim.api.nvim_get_current_win()] = cursor;
+
+		timer:start(debounce_delay, 0, vim.schedule_wrap(function ()
+			cursor = vim.api.nvim_win_get_cursor(0);
 			local lines = vim.api.nvim_buf_line_count(buffer);
 
 			if lines > 1000 then
