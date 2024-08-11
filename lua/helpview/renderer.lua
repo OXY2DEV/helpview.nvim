@@ -1,4 +1,5 @@
 local renderer = {};
+local languages = require("helpview.languages");
 
 local tbl_clamp = function (entry, index)
 	if type(entry) ~= "table" then
@@ -12,7 +13,17 @@ local tbl_clamp = function (entry, index)
 	end
 end
 
-local set_hl = function (hl)
+local get_win = function (buffer)
+	local wins = vim.api.nvim_list_wins();
+
+	for _, win in ipairs(wins) do
+		if vim.api.nvim_win_get_buf(win) == buffer then
+			return win;
+		end
+	end
+end
+
+renderer.set_hl = function (hl)
 	if type(hl) ~= "string" then
 		return;
 	end
@@ -37,83 +48,47 @@ renderer.render_headings = function (buffer, data, global_config, buffer_info)
 
 	local conf = heading_config["heading_" .. data.level];
 
-	if conf.style == "decorated" then
-		if data.delimiter then
-			vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-				end_col = vim.fn.strchars(data.delimiter),
-				conceal = ""
-			});
+	if data.delimiter then
+		local marker = vim.fn.strcharpart(data.delimiter, 0, 1);
 
-			vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, vim.fn.strchars(data.delimiter), {
-				virt_text_pos = "inline",
-				virt_text = {
-					{ conf.parts[1] or "", set_hl(conf.hls and conf.hls[1]) },
-					{ string.rep(conf.parts[2] or "", buffer_info.width - vim.fn.strchars(conf.parts[3] or "") * 2), set_hl(conf.hls and conf.hls[2]) },
-					{ conf.parts[3] or "", set_hl(conf.hls and conf.hls[3]) },
-				},
-			});
-		else
-			vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-				virt_lines_above = true,
-				virt_lines = {
-					{
-						{ conf.parts[1] or "", set_hl(conf.hls and conf.hls[1]) },
-						{ string.rep(conf.parts[2] or "", buffer_info.width - vim.fn.strchars(conf.parts[3] or "") * 2), set_hl(conf.hls and conf.hls[2]) },
-						{ conf.parts[3] or "", set_hl(conf.hls and conf.hls[3]) },
-					}
-				},
-			});
-		end
-
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.delimiter and data.row_start + 1 or data.row_start, 0, {
-			virt_text_pos = "inline",
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			virt_text_pos = "overlay",
 			virt_text = {
-				{ conf.parts[4] or "", set_hl(conf.hls and conf.hls[4]) },
-				{ " " },
-			}
-		});
-
-		-- BUG: Fix the incorrect size of lines containing
-		-- a mix of tabs and spaces
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.delimiter and data.row_start + 1 or data.row_start, #data.text, {
-			virt_text_pos = "eol",
-			virt_text = {
-				{ conf.parts[6] or "", set_hl(conf.hls and conf.hls[6]) }
+				{ string.rep(conf.marker or marker or "", vim.o.columns), renderer.set_hl(conf.sign_hl or conf.hl) }
 			},
 
+			priority = 100,
+
+			end_row = data.row_end
+		});
+	elseif conf.marker then
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			virt_lines_above = true,
 			virt_lines = {
 				{
-					{ conf.parts[7], set_hl(conf.hls and conf.hls[7]) },
-					{ string.rep(conf.parts[8] or "", buffer_info.width - vim.fn.strchars((conf.parts[7] or "") .. (conf.parts[9] or ""))), set_hl(conf.hls and conf.hls[8]) },
-					{ conf.parts[9], set_hl(conf.hls and conf.hls[9]) },
+					{ string.rep(conf.marker, vim.o.columns), renderer.set_hl(conf.sign_hl or conf.hl) }
 				}
 			}
 		});
-	elseif conf.style == "border" then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.delimiter and data.row_start + 1 or data.row_start, 0, {
-			virt_text_pos = "inline",
-			virt_text = {
-				{ " " },
-			}
-		});
+	elseif conf.hl then
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			hl_group = renderer.set_hl(conf.hl),
+			priority = 100,
 
-		-- BUG: Fix the incorrect size of lines containing
-		-- a mix of tabs and spaces
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.delimiter and data.row_start + 1 or data.row_start, #data.text, {
-			virt_text_pos = "eol",
-			virt_text = {
-				{ conf.parts[6] or "", set_hl(conf.hls and conf.hls[6]) }
-			},
-
-			virt_lines = {
-				{
-					{ conf.parts[1], set_hl(conf.hls and conf.hls[1]) },
-					{ string.rep(conf.parts[2] or "", buffer_info.width - vim.fn.strchars((conf.parts[1] or "") .. (conf.parts[3] or ""))), set_hl(conf.hls and conf.hls[2]) },
-					{ conf.parts[3], set_hl(conf.hls and conf.hls[3]) },
-				}
-			}
+			end_col = data.col_end
 		});
 	end
+
+	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_end, vim.fn.strchars(data.text), {
+		virt_text_pos = "right_align",
+		virt_text = {
+			{ conf.sign or " ", renderer.set_hl(conf.sign_hl or conf.hl) }
+		},
+
+		line_hl_group = renderer.set_hl(conf.hl),
+		priority = 1,
+		hl_mode = "combine",
+	});
 end
 
 renderer.render_horizontal_rules = function (buffer, data, config_table, buffer_info)
@@ -137,7 +112,7 @@ renderer.render_horizontal_rules = function (buffer, data, config_table, buffer_
 				for r = 1, repeat_amount do
 					table.insert(_v, {
 						tbl_clamp(part.text or "─", r),
-						set_hl(tbl_clamp(part.hl, r))
+						renderer.set_hl(tbl_clamp(part.hl, r))
 					})
 				end
 			else
@@ -145,12 +120,12 @@ renderer.render_horizontal_rules = function (buffer, data, config_table, buffer_
 					--- NOTE: Can't be 0
 					table.insert(_v, {
 						tbl_clamp(part.text or "─", (repeat_amount - r) + 1),
-						set_hl(tbl_clamp(part.hl, (repeat_amount - r) + 1))
+						renderer.set_hl(tbl_clamp(part.hl, (repeat_amount - r) + 1))
 					})
 				end
 			end
 		elseif part.type == "text" then
-			table.insert(_v, { part.text, set_hl(part.hl) });
+			table.insert(_v, { part.text, renderer.set_hl(part.hl) });
 		end
 	end
 
@@ -170,77 +145,110 @@ renderer.render_title = function (buffer, data, config_table, buffer_info)
 		return;
 	end
 
-	local top_decorations_len = vim.fn.strchars((config_table.parts[1] or "") .. " " .. (data.description or "") .. " " .. (config_table.parts[3] or ""))
-	local title_length = vim.fn.strchars((config_table.parts[4] or "") .. " " .. data.title .. " " .. (config_table.parts[6] or ""))
-	local Bottom_decorations_len = vim.fn.strchars((config_table.parts[7] or "").. (config_table.parts[9] or ""))
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-		virt_text_pos = "overlay",
-		virt_text = {
-			{ config_table.parts[1] or "", set_hl(config_table.hls and config_table.hls[1]) },
-			{ string.rep(config_table.parts[2], buffer_info.width - top_decorations_len), set_hl(config_table.hls and config_table.hls[4]) },
-			{ " " .. (data.description or "") .. " ", set_hl(config_table.description_hl) },
-			{ config_table.parts[3] or "", set_hl(config_table.hls and config_table.hls[3]) },
-		},
-		virt_lines = {
-			{
-				{ config_table.parts[4] or "", set_hl(config_table.hls and config_table.hls[4]) },
-				{ " " },
-				{ data.title, set_hl(config_table.title_hl) },
-				{ string.rep(config_table.parts[5], buffer_info.width - title_length) },
-				{ " " },
-				{ config_table.parts[6] or "", set_hl(config_table.hls and config_table.hls[6]) },
+	if config_table.style == "simple" then
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			virt_text_pos = "right_align",
+			virt_text = {
+				{ config_table.sign or " ", renderer.set_hl(config_table.sign_hl or config_table.hl) }
 			},
-			{
-				{ config_table.parts[7] or "", set_hl(config_table.hls and config_table.hls[7]) },
-				{ string.rep(config_table.parts[8], buffer_info.width - Bottom_decorations_len), set_hl(config_table.hls and config_table.hls[4]) },
-				{ config_table.parts[9] or "", set_hl(config_table.hls and config_table.hls[9]) },
-			}
-		},
 
-		hl_mode = "combine"
-	});
+			line_hl_group = renderer.set_hl(config_table.hl),
+			hl_mode = "combine"
+		});
+	elseif config_table.style == "custom" then
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			virt_text_pos = "right_align",
+			virt_text = config_table.virt_text,
+
+			line_hl_group = renderer.set_hl(config_table.hl),
+			hl_mode = "combine"
+		});
+	elseif config_table.style == "decorated" then
+		local top_decorations_len = vim.fn.strchars((config_table.parts[1] or "") .. " " .. (data.description or "") .. " " .. (config_table.parts[3] or ""))
+		local title_length = vim.fn.strchars((config_table.parts[4] or "") .. " " .. data.title .. " " .. (config_table.parts[6] or ""))
+		local Bottom_decorations_len = vim.fn.strchars((config_table.parts[7] or "").. (config_table.parts[9] or ""))
+
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
+			virt_text_pos = "overlay",
+			virt_text = {
+				{ tbl_clamp(config_table.parts, 1) or "", renderer.set_hl(tbl_clamp(config_table.hl, 1)) },
+				{ string.rep(tbl_clamp(config_table.parts, 2) or "", buffer_info.width - top_decorations_len), renderer.set_hl(tbl_clamp(config_table.hl, 4)) },
+				{ " " .. (data.description or "") .. " ", renderer.set_hl(config_table.description_hl) },
+				{ tbl_clamp(config_table.parts, 3) or "", renderer.set_hl(tbl_clamp(config_table.hl, 1)) },
+			},
+			virt_lines = {
+				{
+					{ tbl_clamp(config_table.parts, 4) or "", renderer.set_hl(tbl_clamp(config_table.hl, 4)) },
+					{ " " },
+					{ data.title, renderer.set_hl(config_table.title_hl) },
+					{ string.rep(tbl_clamp(config_table.parts, 5) or "", buffer_info.width - title_length), renderer.set_hl(tbl_clamp(config_table.hl, 5)) },
+					{ " " },
+					{ tbl_clamp(config_table.parts, 6) or "", renderer.set_hl(tbl_clamp(config_table.hl, 6)) },
+				},
+				{
+					{ tbl_clamp(config_table.parts, 7) or "", renderer.set_hl(tbl_clamp(config_table.hl, 7)) },
+					{ string.rep(tbl_clamp(config_table.parts, 8) or "", buffer_info.width - Bottom_decorations_len), renderer.set_hl(tbl_clamp(config_table.hl, 8)) },
+					{ tbl_clamp(config_table.parts, 9) or "", renderer.set_hl(tbl_clamp(config_table.hl, 9)) },
+				}
+			},
+
+			hl_mode = "combine"
+		});
+	end
 end
 
-renderer.render_inline = function (buffer, data, config_table)
+renderer.component_renderer = function (buffer, data, config_table)
 	if not config_table or config_table.enable == false then
 		return;
 	end
 
-	-- NOTE: The markers are hidden but you should add extmarks after them to remove unnecessary bugs
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start + (config_table.shift_before or 0), {
+	local conceal_before, conceal_after = config_table.conceal_before, config_table.conceal_after;
+
+	if config_table.conceal_before and pcall(config_table.conceal_before, data) then
+		conceal_before = config_table.conceal_before(data);
+	end
+
+	if config_table.conceal_after and pcall(config_table.conceal_after, data) then
+		conceal_after = config_table.conceal_after(data);
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
 		virt_text_pos = "inline",
 		virt_text = {
-			{ config_table.corner_left or "", set_hl(config_table.corner_left_hl) or set_hl(config_table.hl) },
-			{ config_table.padding_left or "", set_hl(config_table.padding_left_hl) or set_hl(config_table.hl) },
-			{ config_table.icon or "", set_hl(config_table.icon_hl) or set_hl(config_table.hl) }
+			{ config_table.padding_left or "", renderer.set_hl(config_table.hl) },
+			{ config_table.icon or "", renderer.set_hl(config_table.hl) }
 		},
 
-		hl_mode = "combine",
-		priority = 1,
-
-		right_gravity = false,
-
-		end_col = config_table.conceal_before and data.col_start + config_table.conceal_before or nil,
-		conceal = config_table.conceal_before and "" or nil
+		priority = 10,
+		end_col = conceal_before and data.col_start + conceal_before or nil,
+		conceal = conceal_before and "" or nil
 	});
 
 	if config_table.hl then
-		vim.api.nvim_buf_add_highlight(buffer, renderer.namespace, set_hl(config_table.hl), data.row_start, data.col_start, data.col_end);
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
+			virt_text_pos = "overlay",
+			virt_text = {
+				{ data.text, renderer.set_hl(config_table.hl) }
+			},
+			hl_group = renderer.set_hl(config_table.hl),
+
+			hl_mode = "combine",
+			virt_text_hide = true,
+			priority = 10,
+			end_col = data.col_end
+		});
 	end
 
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, config_table.conceal_after and data.col_end - config_table.conceal_after or data.col_end, {
+	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_end - (conceal_after or 0), {
 		virt_text_pos = "inline",
 		virt_text = {
-			{ config_table.padding_right or "", set_hl(config_table.padding_right_hl) or set_hl(config_table.hl) },
-			{ config_table.corner_right or "", set_hl(config_table.corner_right_hl) or set_hl(config_table.hl) },
+			{ config_table.padding_right or "", renderer.set_hl(config_table.hl) },
 		},
 
-		hl_mode = "combine",
-		priority = 5,
+		priority = 10,
 
-		end_col = config_table.conceal_after and data.col_end or nil,
-		conceal = config_table.conceal_after and "" or nil
+		end_col = conceal_after and data.col_end or nil,
+		conceal = conceal_after and "" or nil
 	});
 end
 
@@ -258,39 +266,7 @@ renderer.render_notes = function (buffer, data, config_table)
 		end
 	end
 
-	-- NOTE: The markers are hidden but you should add extmarks after them to remove unnecessary bugs
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ conf.corner_left or "", set_hl(conf.corner_left_hl) or set_hl(conf.hl) },
-			{ conf.padding_left or "", set_hl(conf.padding_left_hl) or set_hl(conf.hl) },
-			{ conf.icon or "", set_hl(conf.icon_hl) or set_hl(conf.hl) }
-		},
-
-		hl_mode = "combine",
-		priority = 5,
-
-		end_col = conf.conceal_before and data.col_start + conf.conceal_before or nil,
-		conceal = conf.conceal_before and "" or nil
-	});
-
-	if conf.hl then
-		vim.api.nvim_buf_add_highlight(buffer, renderer.namespace, set_hl(conf.hl), data.row_start, data.col_start, data.col_end == #data.text and data.col_end + 1 or data.col_end);
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, conf.conceal_after and data.col_end - conf.conceal_after or data.col_end, {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ conf.padding_right or "", set_hl(conf.padding_right_hl) or set_hl(conf.hl) },
-			{ conf.corner_right or "", set_hl(conf.corner_right_hl) or set_hl(conf.hl) },
-		},
-
-		hl_mode = "combine",
-		priority = 5,
-
-		end_col = conf.conceal_after and data.col_end or nil,
-		conceal = conf.conceal_after and "" or nil
-	});
+	renderer.component_renderer(buffer, data, conf)
 end
 
 renderer.render_hl = function (buffer, data, config_table)
@@ -308,36 +284,12 @@ renderer.render_hl = function (buffer, data, config_table)
 		return;
 	end
 
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config_table.corner_left or "", set_hl(config_table.corner_left_hl or hl) },
-			{ config_table.padding_left or "", set_hl(config_table.padding_left_hl or hl) },
-			{ config_table.icon or "", set_hl(config_table.icon_hl or hl) }
-		},
+	renderer.component_renderer(buffer, data, vim.tbl_extend("force", config_table, {
+		hl = hl,
 
-		hl_mode = "combine",
-		priority = 5,
-
-		end_col = config_table.conceal_before and data.col_start + config_table.conceal_before or nil,
-		conceal = config_table.conceal_before and "" or nil
-	});
-
-	vim.api.nvim_buf_add_highlight(buffer, renderer.namespace, set_hl(hl), data.row_start, data.col_start, data.col_end);
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, config_table.conceal_after and data.col_end - config_table.conceal_after or data.col_end, {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config_table.padding_right or "", set_hl(config_table.padding_right_hl or hl) },
-			{ config_table.corner_right or "", set_hl(config_table.corner_right_hl or hl) },
-		},
-
-		hl_mode = "combine",
-		priority = 5,
-
-		end_col = config_table.conceal_after and data.col_end or nil,
-		conceal = config_table.conceal_after and "" or nil
-	});
+		conceal_before = 1,
+		conceal_after = 1
+	}));
 end
 
 renderer.render_code_blocks = function (buffer, data, config_table, buffer_info)
@@ -346,20 +298,23 @@ renderer.render_code_blocks = function (buffer, data, config_table, buffer_info)
 	end
 
 	local block_size = buffer_info.win_width;
+	local icon = languages.get(data.language);
+	local name = languages.name(data.language);
+
+	local start_seg = " " .. icon .. name;
 
 	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
 		virt_lines = {
 			{
-				{ string.rep(" ", block_size - vim.fn.strchars(data.language ~= "" and " " .. data.language .. " " or "")), config_table.hl },
-				{ data.language ~= "" and " " .. data.language .. " " or "", config_table.language_hl }
+				{ start_seg, config_table.language_hl },
+				{ string.rep(" ", block_size - vim.fn.strchars(start_seg)), config_table.hl },
 			}
 		},
 		hl_mode = "combine",
 		priority = 1
 	})
 
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_end, 0, {
-		virt_lines_above = true,
+	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_end - 1, 0, {
 		virt_lines = {
 			{
 				{ string.rep(" ", block_size), config_table.hl },
@@ -535,33 +490,34 @@ renderer.render = function (buffer, parsed_content, config_table, buffer_info)
 		_G.__helpview_views[buffer] = parsed_content
 	end
 
+	-- vim.print(#parsed_content)
 	for _, data in ipairs(_G.__helpview_views[buffer]) do
 		if data.type == "heading" then
-			renderer.render_headings(buffer, data, config_table, buffer_info);
+			pcall(renderer.render_headings, buffer, data, config_table, buffer_info);
 		elseif data.type == "title" then
-			renderer.render_title(buffer, data, config_table.title, buffer_info)
+			pcall(renderer.render_title, buffer, data, config_table.title, buffer_info)
 		elseif data.type == "highlight_group" then
-			renderer.render_hl(buffer, data, config_table.hls)
+			pcall(renderer.render_hl, buffer, data, config_table.group_names)
 		elseif data.type == "tag" then
-			renderer.render_inline(buffer, data, config_table.tags)
+			pcall(renderer.component_renderer, buffer, data, config_table.tag_links)
 		elseif data.type == "link" then
-			renderer.render_inline(buffer, data, config_table.links)
+			pcall(renderer.component_renderer, buffer, data, config_table.mention_links)
 		elseif data.type == "option_link" then
-			renderer.render_inline(buffer, data, config_table.option_links)
+			pcall(renderer.component_renderer, buffer, data, config_table.option_links)
 		elseif data.type == "key_code" then
-			renderer.render_inline(buffer, data, config_table.key_codes)
+			pcall(renderer.component_renderer, buffer, data, config_table.keycodes)
 		elseif data.type == "argument" then
-			renderer.render_inline(buffer, data, config_table.arguments)
+			pcall(renderer.component_renderer, buffer, data, config_table.arguments)
 		elseif data.type == "inline_code" then
-			renderer.render_inline(buffer, data, config_table.inline_codes)
+			pcall(renderer.component_renderer, buffer, data, config_table.inline_codes)
 		elseif data.type == "note" then
-			renderer.render_notes(buffer, data, config_table.notes)
+			pcall(renderer.render_notes, buffer, data, config_table.notes)
 		elseif data.type == "code_block" then
-			renderer.render_code_blocks(buffer, data, config_table.code_blocks, buffer_info)
+			pcall(renderer.render_code_blocks, buffer, data, config_table.code_blocks, buffer_info)
 		elseif data.type == "modeline" then
-			renderer.render_modeline(buffer, data, config_table.modelines)
+			pcall(renderer.render_modeline, buffer, data, config_table.modelines)
 		elseif data.type == "horizontal_rule" then
-			renderer.render_horizontal_rules(buffer, data, config_table.horizontal_rules, buffer_info)
+			pcall(renderer.render_horizontal_rules, buffer, data, config_table.horizontal_rules, buffer_info)
 		end
 	end
 end
@@ -576,52 +532,28 @@ renderer.updateView = function (buffer, parsed_content)
 	end
 end
 
-renderer.clear = function (buffer)
-	vim.api.nvim_buf_clear_namespace(buffer, renderer.namespace, 0, -1);
+renderer.clear = function (buffer, from, to)
+	vim.api.nvim_buf_clear_namespace(buffer, renderer.namespace, from or 0, to or -1);
 end
 
-renderer.partial_render = function (buffer, from, to, config_table, buffer_info)
-	for _, data in ipairs(_G.__helpview_views[buffer]) do
-		if data.row_start < from or data.row_start > to then
-			goto outOfRange;
+renderer.get_content_range = function (content)
+	local min, max;
+
+	for _, data in ipairs(content) do
+		if not min or data.row_start < min then
+			min = data.row_start;
 		end
 
-		if data.type == "heading" then
-			renderer.render_headings(buffer, data, config_table, buffer_info);
-		elseif data.type == "title" then
-			renderer.render_title(buffer, data, config_table.title, buffer_info)
-		elseif data.type == "highlight_group" then
-			renderer.render_hl(buffer, data, config_table.hls)
-		elseif data.type == "tag" then
-			renderer.render_inline(buffer, data, config_table.tags)
-		elseif data.type == "link" then
-			renderer.render_inline(buffer, data, config_table.links)
-		elseif data.type == "option_link" then
-			renderer.render_inline(buffer, data, config_table.option_links)
-		elseif data.type == "key_code" then
-			renderer.render_inline(buffer, data, config_table.key_codes)
-		elseif data.type == "argument" then
-			renderer.render_inline(buffer, data, config_table.arguments)
-		elseif data.type == "inline_code" then
-			renderer.render_inline(buffer, data, config_table.inline_codes)
-		elseif data.type == "note" then
-			renderer.render_notes(buffer, data, config_table.notes)
-		elseif data.type == "code_block" then
-			renderer.render_code_blocks(buffer, data, config_table.code_blocks, buffer_info)
-		elseif data.type == "modeline" then
-			renderer.render_modeline(buffer, data, config_table.modelines)
-		elseif data.type == "horizontal_rule" then
-			renderer.render_horizontal_rules(buffer, data, config_table.horizontal_rules, buffer_info)
+		if not max or data.row_end > max then
+			max = data.row_end;
 		end
-
-		::outOfRange::
 	end
-end
 
-renderer.partial_clear = function (buffer, from, to)
-	local buf_size = vim.api.nvim_buf_line_count(buffer);
+	if min and max and min == max then
+		max = max + 1;
+	end
 
-	vim.api.nvim_buf_clear_namespace(buffer, renderer.namespace, from < 0 and 0 or from, to > buf_size and buf_size or to);
+	return min, max;
 end
 
 return renderer;

@@ -12,19 +12,21 @@ parser.get_str_type = function (str)
 	end
 end
 
-parser.vimdoc = function (buffer, TStree)
+parser.vimdoc = function (buffer, TStree, from, to)
 	local scanned_queies = vim.treesitter.query.parse("vimdoc", [[
 		([(h1)
 		  (h2)
 			] @heading)
 
-		((h3) @heading_no_delimiter)
+		([(h3)
+		  (column_heading)
+			]@heading_no_delimiter)
 
 		((word) @may_be_hl)
 
 		((tag) @tag)
 
-		((taglink) @link)
+		((taglink) @mention_link)
 
 		((optionlink) @option_link)
 
@@ -41,19 +43,7 @@ parser.vimdoc = function (buffer, TStree)
 		((modeline) @modeline)
 	]]);
 
-	-- Strange error with #match?
-	-- local scanned_hls = vim.treesitter.query.parse("vimdoc", [[
-	-- 	(((word) @hl)
-	-- 		(#match? @hl "^[A-Z_]+$"))
-	-- ]]);
-	--
-	-- vim.print(scanned_hls)
-	--
-	-- for capture_id, capture_node, _, _ in scanned_hls:iter_captures(TStree:root()) do
-	-- 	vim.print(capture_id)
-	-- end
-
-	for capture_id, capture_node, _, _ in scanned_queies:iter_captures(TStree:root()) do
+	for capture_id, capture_node, _, _ in scanned_queies:iter_captures(TStree:root(), buffer, from, to) do
 		local capture_name = scanned_queies.captures[capture_id];
 		local capture_text = vim.treesitter.get_node_text(capture_node, buffer);
 		local row_start, col_start, row_end, col_end = capture_node:range();
@@ -134,7 +124,7 @@ parser.vimdoc = function (buffer, TStree)
 					row_start = row_start,
 					col_start = col_start,
 
-					row_end = row_end,
+					row_end = row_end - 1,
 					col_end = col_end
 				})
 			end
@@ -144,9 +134,15 @@ parser.vimdoc = function (buffer, TStree)
 			local h_start = heading:range();
 			local h_txt = vim.api.nvim_buf_get_lines(buffer, h_start, h_start + 1, false)[1];
 
+			local level = 3;
+
+			if capture_node:type() == "column_heading" then
+				level = 4;
+			end
+
 			table.insert(parser.parsed_content, {
 				type = "heading",
-				level = tonumber(capture_node:type():sub(2)),
+				level = level,
 
 				delimiter = nil,
 				text = h_txt,
@@ -154,7 +150,7 @@ parser.vimdoc = function (buffer, TStree)
 				row_start = row_start,
 				col_start = col_start,
 
-				row_end = row_end,
+				row_end = row_end - 1,
 				col_end = col_end
 			})
 		elseif capture_name == "may_be_hl" then
@@ -165,6 +161,8 @@ parser.vimdoc = function (buffer, TStree)
 			table.insert(parser.parsed_content, {
 				type = "highlight_group",
 				name = capture_text:gsub("%$", ""),
+
+				text = capture_text:gsub("%$", ""),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -233,7 +231,7 @@ parser.vimdoc = function (buffer, TStree)
 			else
 				table.insert(parser.parsed_content, {
 					type = "tag",
-					text = capture_text,
+					text = capture_text:gsub("*", ""),
 
 					row_start = row_start,
 					col_start = col_start,
@@ -242,10 +240,10 @@ parser.vimdoc = function (buffer, TStree)
 					col_end = col_end
 				})
 			end
-		elseif capture_name == "link" then
+		elseif capture_name == "mention_link" then
 			table.insert(parser.parsed_content, {
 				type = "link",
-				text = capture_text,
+				text = capture_text:gsub("%|", ""),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -256,7 +254,7 @@ parser.vimdoc = function (buffer, TStree)
 		elseif capture_name == "option_link" then
 			table.insert(parser.parsed_content, {
 				type = "option_link",
-				text = capture_text,
+				text = capture_text:gsub("[']", ""),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -267,7 +265,7 @@ parser.vimdoc = function (buffer, TStree)
 		elseif capture_name == "inline_code" then
 			table.insert(parser.parsed_content, {
 				type = "inline_code",
-				text = capture_text,
+				text = capture_text:gsub("`", ""),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -278,7 +276,8 @@ parser.vimdoc = function (buffer, TStree)
 		elseif capture_name == "key_code" then
 			table.insert(parser.parsed_content, {
 				type = "key_code",
-				text = capture_text,
+				text = capture_text:gsub("[%<%>]", ""),
+				extracted = capture_text:match("%<(.-)%>"),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -289,7 +288,7 @@ parser.vimdoc = function (buffer, TStree)
 		elseif capture_name == "arg" then
 			table.insert(parser.parsed_content, {
 				type = "argument",
-				text = capture_text,
+				text = capture_text:gsub("[%{%}]", ""),
 
 				row_start = row_start,
 				col_start = col_start,
@@ -344,7 +343,7 @@ parser.vimdoc = function (buffer, TStree)
 	end
 end
 
-parser.init = function (buffer)
+parser.init = function (buffer, from, to)
 	local root_parser = vim.treesitter.get_parser(buffer);
 	root_parser:parse();
 
@@ -354,7 +353,7 @@ parser.init = function (buffer)
 		local tree_language = language_tree:lang();
 
 		if tree_language == "vimdoc" then
-			parser.vimdoc(buffer, TStree);
+			parser.vimdoc(buffer, TStree, from, to);
 		end
 	end);
 

@@ -4,7 +4,7 @@ name: Release Please
 on:
   push:
     branches:
-      - dev
+      - main
 
 permissions:
   contents: write
@@ -22,6 +22,4 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           # this is a built-in strategy in release-please, see "Action Inputs"
           # for more options
-
-          target-branch: dev
           release-type: simple
