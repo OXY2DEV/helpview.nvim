@@ -79,7 +79,7 @@ renderer.render_headings = function (buffer, data, global_config, buffer_info)
 		});
 	end
 
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_end, vim.fn.strchars(data.text), {
+	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.__r_end or data.row_end, vim.fn.strchars(data.text), {
 		virt_text_pos = "right_align",
 		virt_text = {
 			{ conf.sign or " ", renderer.set_hl(conf.sign_hl or conf.hl) }
@@ -338,7 +338,7 @@ renderer.render_modeline = function (buffer, data, config_table)
 		return;
 	end
 
-	if config_table.style == "oneliner" then
+	if config_table.style == "minimal" then
 		local _v = {
 			{ config_table.icon or "  ", config_table.icon_hl },
 			{ config_table.selector or ".vim ", config_table.selector_hl },
@@ -346,51 +346,23 @@ renderer.render_modeline = function (buffer, data, config_table)
 		};
 
 		for _, option in ipairs(data.options or {}) do
-			if option.key and option.value then
-				local _o;
+			local val = vim.o[option.name];
 
-				if config_table.options[option.key] then
-					_o = config_table.options[option.key];
+			if type(val) == "string" then
+				if val:match('"') then
+					val = "'" .. val .. "'";
+				elseif val:match("'") then
+					val = '"' .. val .. '"';
+				elseif val:match([[ ["'] ]]) then
+					val = "[[ " .. val .. " ]]";
 				else
-					_o = option;
-				end
-
-				table.insert(_v, { _o.key .. ": ", config_table.option_hl});
-
-				if _o.type == "string" and not option.key:match([[ (['"])[^'"]+(['"]) ]]) then
-					table.insert(_v, { '"' ..  _o.value .. '"', config_table.type_hl.string });
-				elseif _o.type == "string" then
-					table.insert(_v, { _o.value, config_table.type_hl.string });
-				elseif _o.type == "number" then
-					table.insert(_v, { _o.value, config_table.type_hl.number });
-				elseif _o.type == "boolean" then
-					table.insert(_v, { _o.value, config_table.type_hl.boolean });
-				else
-					table.insert(_v, { _o.value });
-				end
-
-				table.insert(_v, { "; ", config_table.seperator_hl });
-			elseif option.text then
-				if config_table.options[option.text] then
-					local _o = config_table.options[option.text];
-
-					table.insert(_v, { _o.key .. ": ", config_table.option_hl});
-
-					if _o.type == "string" and not option.key:match([[ (['"])[^'"]+(['"]) ]]) then
-						table.insert(_v, { '"' ..  _o.value .. '"', config_table.type_hl.string });
-					elseif _o.type == "string" then
-						table.insert(_v, { _o.value, config_table.type_hl.string });
-					elseif _o.type == "number" then
-						table.insert(_v, { _o.value, config_table.type_hl.number });
-					elseif _o.type == "boolean" then
-						table.insert(_v, { _o.value, config_table.type_hl.boolean });
-					else
-						table.insert(_v, { _o.value });
-					end
-
-					table.insert(_v, { "; ", config_table.seperator_hl });
+					val = '"' .. val .. '"';
 				end
 			end
+
+			table.insert(_v, { option.name .. ": ", renderer.set_hl(config_table.option_hl) });
+			table.insert(_v, { tostring(val) or "nil", renderer.set_hl("@" .. option.type) });
+			table.insert(_v, { "; ", "@punctuation.delimiter" });
 		end
 
 		table.insert(_v, { "}", config_table.surround_hl })
@@ -407,71 +379,43 @@ renderer.render_modeline = function (buffer, data, config_table)
 	elseif config_table.style == "expanded" then
 		local _v = {
 			{
-				{ config_table.icon or "  ", config_table.icon_hl },
-				{ config_table.selector or ".vim ", config_table.selector_hl },
+				{ config_table.icon or "  ", config_table.icon_hl },
+				{ config_table.selector or ".nvim ", config_table.selector_hl },
 				{ "{ ", config_table.surround_hl }
 			}
 		};
 
 		for _, option in ipairs(data.options or {}) do
 			local _l = { { "	" }};
+			local val = vim.o[option.name];
 
-			if option.key and option.value then
-				local _o;
-
-				if config_table.options[option.key] then
-					_o = vim.tbl_extend("keep", config_table.options[option.key], option);
+			if type(val) == "string" then
+				if val:match('"') then
+					val = "'" .. val .. "'";
+				elseif val:match("'") then
+					val = '"' .. val .. '"';
+				elseif val:match([[ ["'] ]]) then
+					val = "[[ " .. val .. " ]]";
 				else
-					_o = option;
-				end
-
-				table.insert(_l, { _o.key .. ": ", config_table.option_hl});
-
-				if _o.type == "string" and not option.key:match([[ (['"])[^'"]+(['"]) ]]) then
-					table.insert(_l, { '"' ..  _o.value .. '"', config_table.type_hl.string });
-				elseif _o.type == "string" then
-					table.insert(_l, { _o.value, config_table.type_hl.string });
-				elseif _o.type == "number" then
-					table.insert(_l, { _o.value, config_table.type_hl.number });
-				elseif _o.type == "boolean" then
-					table.insert(_l, { _o.value, config_table.type_hl.boolean });
-				else
-					table.insert(_l, { _o.value });
-				end
-
-				table.insert(_l, { "; ", config_table.seperator_hl });
-			elseif option.text then
-				if config_table.options[option.text] then
-					local _o = config_table.options[option.text];
-
-					table.insert(_l, { _o.key .. ": ", config_table.option_hl});
-
-					if _o.type == "string" and not option.key:match([[ (['"])[^'"]+(['"]) ]]) then
-						table.insert(_l, { '"' ..  _o.value .. '"', config_table.type_hl.string });
-					elseif _o.type == "string" then
-						table.insert(_l, { _o.value, config_table.type_hl.string });
-					elseif _o.type == "number" then
-						table.insert(_l, { _o.value, config_table.type_hl.number });
-					elseif _o.type == "boolean" then
-						table.insert(_l, { _o.value, config_table.type_hl.boolean });
-					else
-						table.insert(_l, { _o.value });
-					end
-
-					table.insert(_l, { "; ", config_table.seperator_hl });
+					val = '"' .. val .. '"';
 				end
 			end
+
+			table.insert(_l, { option.name .. ": ", renderer.set_hl(config_table.option_hl) });
+			table.insert(_l, { tostring(val) or "nil", renderer.set_hl("@" .. option.type) });
+			table.insert(_l, { "; ", "@punctuation.delimiter" });
 
 			table.insert(_v, _l)
 		end
 
-		table.insert(_v, {
-			{ "}", config_table.surround_hl }
-		});
-
 		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
 			virt_lines_above = true;
 			virt_lines = _v,
+
+			virt_text_pos = "overlay",
+			virt_text = {
+				{ "}", config_table.surround_hl }
+			},
 
 			hl_mode = "combine",
 

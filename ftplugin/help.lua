@@ -79,7 +79,10 @@ vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
 	end
 });
 
-vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+local cached_mode = nil;
+local mode_timer = vim.uv.new_timer();
+
+vim.api.nvim_create_autocmd({ "ModeChanged", "TextChanged" }, {
 	group = help_augroup,
 	buffer = vim.api.nvim_get_current_buf(),
 
@@ -87,42 +90,59 @@ vim.api.nvim_create_autocmd({ "ModeChanged" }, {
 		local mode = vim.api.nvim_get_mode().mode;
 		local buffer = event.buf;
 
-		if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
-			return;
+		local mode_debounce = 50;
+
+		mode_timer:stop();
+
+		if cached_mode and cached_mode == mode then
+			mode_debounce = 0;
 		end
 
-		if helpview.configuration.callbacks and helpview.configuration.callbacks.on_mode_change then
-			for _, win in ipairs(helpview.get_attached_wins(buffer)) do
-				pcall(helpview.configuration.callbacks.on_mode_change, buffer, win, mode);
+		mode_timer:start(mode_debounce, 0, vim.schedule_wrap(function ()
+			if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
+				return;
 			end
-		end
 
-		if not vim.list_contains(helpview.configuration.modes, mode) then
-			helpview.renderer.clear(buffer);
-			return;
-		end
+			mode = vim.api.nvim_get_mode().mode;
 
-		local cursor = vim.api.nvim_win_get_cursor(0);
-		local lines = vim.api.nvim_buf_line_count(buffer);
+			if event.event == "ModeChanged" or mode ~= cached_mode then
+				if helpview.configuration.callbacks and helpview.configuration.callbacks.on_mode_change then
+					for _, win in ipairs(helpview.get_attached_wins(buffer)) do
+						pcall(helpview.configuration.callbacks.on_mode_change, buffer, win, mode);
+					end
+				end
+			end
 
-		if lines > 1000 then
-			local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
-			local after = math.min(lines, cursor[1] + (helpview.configuration.parse_range or 100));
+			cached_mode = mode;
 
-			local parse = helpview.parser.init(buffer, before, after);
+			if not vim.list_contains(helpview.configuration.modes, mode) then
+				helpview.renderer.clear(buffer);
+				vim.cmd("redraw!");
+				return;
+			end
 
-			helpview.renderer.clear(buffer);
-			helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
-		else
-			local parse = helpview.parser.init(buffer);
+			local cursor = vim.api.nvim_win_get_cursor(0);
+			local lines = vim.api.nvim_buf_line_count(buffer);
 
-			helpview.renderer.clear(buffer);
-			helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
-		end
+			if lines > 1000 then
+				local before = math.max(0, cursor[1] - (helpview.configuration.parse_range or 100));
+				local after = math.min(lines, cursor[1] + (helpview.configuration.parse_range or 100));
 
-		if not helpview.configuration.hybrid_modes or not vim.list_contains(helpview.configuration.hybrid_modes, mode) then
-			return;
-		end
+				local parse = helpview.parser.init(buffer, before, after);
+
+				helpview.renderer.clear(buffer);
+				helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
+			else
+				local parse = helpview.parser.init(buffer);
+
+				helpview.renderer.clear(buffer);
+				helpview.renderer.render(buffer, parse, helpview.configuration, helpview.get_buffer_info(event.buf));
+			end
+
+			if not helpview.configuration.hybrid_modes or not vim.list_contains(helpview.configuration.hybrid_modes, mode) then
+				return;
+			end
+		end));
 	end
 });
 

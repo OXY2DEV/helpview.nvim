@@ -1,52 +1,59 @@
-*helpview.nvim* Fancy decorations for vimdoc
+📖 *helpview.nvim*                  An experimental vimdoc decorator for Neovim
 
-                              Created by OXY2DEV
 
-==============================================================================
-Features                                                 *helpview-features*
+                           ╦ ╦┌─┐┬  ┌─┐┬  ┬┬┌─┐┬ ┬
+                           ╠═╣├┤ │  ├─┘└┐┌┘│├┤ │││
+                           ╩ ╩└─┘┴─┘┴   └┘ ┴└─┘└┴┘.nvim
 
-- Decorated titles, headings, tags, tag-links, option-links, arguments and
-  more!
-- Supports horizontal rules!(not provided by vimdoc syntax)
-- Decorated modeline.
-- Dynamic colors based on the colorscheme(only for `tree-sitter` supported
-  colorschemes).
+                                 By `OXY2DEV`
 
 ==============================================================================
-Requirements                                         *helpview-requirements*
+Features                                             *helpview.nvim-features*
 
-- Neovim version `0.10.0` or higher.
-- Tree-sitter parser for `vimdoc`.
-- Nerd font.
-- A tree-sitter supported colorscheme is also recommended.
+	• Decorations for various `vimdoc` syntaxes!
+	• Dynamic highlight groups to support a wide range of colorschemes!
+	• Previewing as you type!
+	• Performant even on large files!
+	• Supports modelines too!
 
 ==============================================================================
-Installation                                              *helpview-install*
+Requirements                                     *helpview.nvim-requirements*
 
-You can install `helpview.nvim` via your favourite plugin manager.
+	• Neovim version `0.10.0` or higher.
+	• Tree-sitter parser for `vimdoc`.
+	• Nerd font.
+
+Optional:
+	• A `tree-sitter` supported colorscheme is also recommended.
+
+==============================================================================
+Installation                                          *helpview.nvim-install*
+
+You can install `helpview.nvim` via your favourite plugin manager!
 
 ------------------------------------------------------------------------------
-Lazy.nvim                                            *helpview-install-lazy*
+💤 Lazy.nvim                                           *helpview.nvim-i-lazy*
 
-Warning: This plugin doesn't need to be `lazy-loaded`.
+Warning: It is not recommended to `lazy-load` this plugin.
 
 For `lazy.lua` users.
 >lua
 	{
 		"OXY2DEV/helpview.nvim",
-		ft = "help",
+		lazy = false,    -- Recommended
+		-- ft = "help",  -- In case you still want to lazy load
 
 		dependencies = {
 			"nvim-treesitter/nvim-treesitter"
 		}
 	}
 <
-
 For `plugins/helpview.lua` users.
 >lua
 	return {
 		"OXY2DEV/helpview.nvim",
-		ft = "help",
+		lazy = false,    -- Recommended
+		-- ft = "help",  -- In case you still want to lazy load
 
 		dependencies = {
 			"nvim-treesitter/nvim-treesitter"
@@ -54,7 +61,7 @@ For `plugins/helpview.lua` users.
 	}
 <
 ------------------------------------------------------------------------------
-Mini.deps                                        *helpview-install-minideps*
+🦠 Mini.deps                                       *helpview.nvim-i-minideps*
 >lua
 	local MiniDeps = require("mini.deps");
 
@@ -67,40 +74,18 @@ Mini.deps                                        *helpview-install-minideps*
 	});
 <
 ------------------------------------------------------------------------------
-Others
+🤔 Others
 
-Installation for other plugin managers are similar.
+Installation process via other plugin managers are similar.
 >vim
 	Plug "nvim-treesitter/nvim-treesitter";
 	Plug "OXY2DEV/helpview.nvim";
 <
-
-==============================================================================
-Usage
-
-The plugin will be automatically loaded when a help file is opened. You can
-also toggle the plugin using commands.
-
 ------------------------------------------------------------------------------
-Rendering                                               *helpview-rendering*
+🚀 Commands                                          *helpview.nvim-commands*
 
-The plugin does 2 types of rendering,
-	• Full render      Renders the entire buffer.
-	• Partial render   Renders a specific part of the buffer.
-	                   Note: This doesn't work if the buffer wasn't
-					   fully rendered before.
-
-Partial render is done when the buffer has more lines than {max_lines} or if
-the buffer isn't |'modifiable'|. It is mainly for performance reasons.
-
-Warning: Partial render can cause visual bugs from time to time.
-
-------------------------------------------------------------------------------
-Commands                                                 *helpview-commands*
-
-The plugin provodes a single command with a few sub-commands. It also provides
-completion for the various sub-commands including buffer ID completion for
-ones that support it.
+The plugin provides a single command with a few sub-commands. It also 
+provides completion for the various sub-commands.
 
 To toggle the plugin, run the following command.
 >vim
@@ -108,766 +93,346 @@ To toggle the plugin, run the following command.
 <
 This command comes with the following sub-commands,
 
-	• :toggleAll          Toggles the plugin.
-	• :enableAll          Enables the plugin. Can be used to refresh the
-	                      plugin.
-	• :disableAll         Disables the plugin.
-	• :toggle {buffer}    Toggles the plugin in the specified {buffer}.
-	• :enable {buffer}    Enables the plugin in the specified {buffer}.
-	• :disable {buffer}   Disables the plugin in the specified {buffer}.
+	• toggleAll          Toggles the plugin.
+	• enableAll          Enables the plugin. Can be used to refresh the
+	                     plugin.
+	• disableAll         Disables the plugin.
+	• toggle {buffer}    Toggles the plugin in the specified {buffer}.
+	• enable {buffer}    Enables the plugin in the specified {buffer}.
+	• disable {buffer}   Disables the plugin in the specified {buffer}.
 
+------------------------------------------------------------------------------
+🎨 Highlight groups                                       *helpview.nvim-hls*
 
-==============================================================================
-Setup                                                       *helpview-setup*
+Helpview.nvim comes with the following highlight groups.
 
-The plugin has the following setup table.
+Title ~
 
-Note: Calling `setup()` is NOT necessary for the plugin.
+Used for the title.
+
+	• $Helpviewtitle$, from `DiagnosticWarn`.
+
+Headings ~
+
+Used for the different heading levels.
+
+	• $HelpviewHeading1$, from `DiagnosticOk`.
+	• $HelpviewHeading2$, from `DiagnosticInfo`.
+	• $HelpviewHeading3$, from `DiagnosticHint`.
+	• $HelpviewHeading4$, from `Special`.
+
+Code blocks ~
+
+Used by code blocks.
+
+	• $HelpviewCode$, from `Normal`.
+	• $HelpviewCodeLanguage$, from `Comment`.
+
+Inline codes ~
+
+	• $HelpviewInlineCode$, from `@markup.raw.vimdoc`.
+
+Horizontal rules ~
+
+	• $HelpviewGradient1$, from `Normal`.
+	• $HelpviewGradient2$
+	• $HelpviewGradient3$
+	• $HelpviewGradient4$
+	• $HelpviewGradient5$
+	• $HelpviewGradient6$
+	• $HelpviewGradient7$
+	• $HelpviewGradient8$
+	• $HelpviewGradient9$
+	• $HelpviewGradient10$, from `Tag`.
+
+Others ~
+
+	• $HelpviewTaglink$, from `Title`.
+	• $HelpviewOptionlink$, from, `Tag`.
+	• $HelpviewMentionlink$, from `Title`.
+
+=============================================================================
+🚀 Plugin configuration                                *helpview.nvim-config*
+
 >lua
 	{
-		---+ ##code##
-		modes = { "n", "c" },
+		-- buftypes to ignore
 		buf_ignore = {},
 
-		options = {
-			on_modifiable = {},
-			on_enable = {},
+		-- Modes where the plugin is enabled
+		modes = {},
+		-- Modes where "hybrid_mode" is used
+		hybrid_modes = {},
 
-			on_disable = {}
+		-- Functions to call on various events
+		callbacks = {
+			-- When plugin is enabled
+			on_enable = nil,
+			-- When plugin is disabled
+			on_disable = nil,
+
+			-- When mode changes
+			on_mode_change = nil
 		},
 
-		highlight_groups = {},
-
-		title = {
-			enable = true,
-
-			parts = {},
-			hls = {},
-
-			title_hl = "Title",
-			description_hl = "Comment"
-		},
-		headings = {
-			enable = true,
-
-			heading_1 = {},
-			heading_2 = {},
-			heading_3 = {},
-		},
-
-		tags = {
-			enable = true,
-
-			corner_left = nil, corner_left_hl = nil,
-			padding_left = " ", padding_left_hl = nil,
-
-			icon = nil, icon_hl = nil,
-
-			padding_right = " ", padding_right_hl = nil,
-			corner_right = nil, corner_right_hl = nil,
-
-			hl = "HelpviewTaglink"
-		},
-
-		-- These options have the same structure
-		links = {},
-		option_links = {},
-		arguments = {},
-		inline_codes = {},
-		key_codes = {},
-
-		code_blocks = {
-			enable = true,
-
-			hl = "HelpviewCodeBlocks"
-			language_hl = "HelpviewCodeBlocksLanguage"
-		},
-
-		notes = {
-			enable = true,
-
-			default = {
-				corner_left = nil, corner_left_hl = nil,
-				padding_left = nil, padding_left_hl = nil,
-
-				icon = "   ", icon_hl = nil,
-
-				padding_right = " ", padding_right_hl = nil,
-				corner_right = nil, corner_right_hl = nil,
-
-				hl = "@comment.note"
-			},
-
-			-- The following options have similar structure
-			warning = {},
-			deprecated = {}
-		},
-
-		modelines = {
-			enable = true,
-
-			options = {
-				{
-					key = "spell",
-					value = "false"
-				}
-			},
-
-			icon_hl = "rainbow_4",
-			selector_hl = "@function.builtin",
-			surround_hl = "@conditional",
-
-			option_hl = "Special"
-		},
-		---_
+		-- Rendering configuration
+		arguments = {},          -- {arg}
+		code_blocks = {},
+		group_names = {},        -- $Group$
+		headings = {},
+		horizontal_rules = {},
+		inline_codes = {},       -- `code`
+		keycodes = {},           -- <ESC>
+		mention_links = {},      -- |link|
+		modelines = {},          -- vim:
+		notes = {},              -- Note:
+		option_links = {},       -- 'option'
+		tag_links = {},          -- <tag>
+		title = {}
 	}
 <
 
-MODES                                                     *helpview-o-modes*
-
-A list of modes where the plugin will be active. Check |modes()| to see all
-the possible values.
-
-By default, the plugin will be active on `normal` & `command-line` mode.
-
-BUF IGNORE                                           *helpview-o-buf_ignore*
-
-List of buffer types to ignore. Possible values are mentioned in |'buftype'|.
-
-MAX LINES                                             *helpview-o-max_lines*
-
-The maximum number of lines a buffer can have for `full render`. If the line
-count exceeds this number `partial render` is done to prevent performance
-issues on low-end devices(e.g. Phones).
-
-The default value is 1000.
-
-Note: `Partial render` is done(except for when the buffer window is first
-loaded) on |'nomodified'| buffers regardless of their line count.
-
-RENDER LINES                                       *helpview-o-render_lines*
-
-The maximum number of lines to do `partial render` on. The specified number of
-lines above & below the current line will be re-rendered.
-
-Default is the value of |'columns'|.
-
-OPTIONS                                                 *helpview-o-options*
-
-Buffer options to set for various states of the plugin.
-
-	• {on_enable}           For when the plugin is enabled.
-	• {on_disable}          For when the plugin is disabled.
-
-The options are functions. They receive the {window_handle} and the
-{buffer_handle} as parameters.
-
-Usage ~
+arguments ~
 >lua
-	options = {
-		on_enable = function (window, buffer)
-			-- This can be used for checking if a line is
-			-- dangerously close to the textwidth.
-			--
-			-- Useful for finding lines that can potentially
-			-- hinder the flow of the document
-			if vim.bo[buffer].modifiable == true then
-				vim.wo[window].colorcolumn = "+1";
-			end
-		end
+	arguments = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = "",       -- Padding for the left side
+		padding_right = "",      -- Padding for the right side
+
+		icon = "󰂖 ",              -- Icon to use
+		hl = "Argument"           -- Highlight group
+	}
+<
+code_blocks ~
+>lua
+	code_blocks = {
+		enable = true,
+
+		hl = "Code",              -- Highlight group for the code block
+		language_hl = "CodeLang"  -- Highlight group for the language name
+	}
+<
+group_names ~
+>lua
+	group_names = {
+		enable = true,
+
+		padding_left = "",       -- Padding for the left side
+		padding_right = "",      -- Padding for the right side
+
+		icon = "󰏘 "              -- Icon for the hl group name
+	}
+<
+headings ~
+>lua
+	headings = {
+		enable = true,
+
+		heading_1 = {},
+		heading_2 = {},
+		heading_3 = {},
+		heading_4 = {},
+	}
+<
+Each of the headings have the following structure,
+>lua
+	heading_1 = {
+		hl = "H1",              -- Highlight group name
+		marker = "═",           -- Marker to show above the heading
+		sign = " "             -- Icon to show on the heading
+	}
+<
+horizontal_rules ~
+>lua
+	horizontal_rules = {
+		enable = true,
+		parts = {}              -- Parts to make the HR
 	}
 <
 
-HIGHLIGHT GROUPS                               *helpview-o-highlight_groups*
+There are 2 types of parts,
 
-Used for setting various highlight groups for the plugin. Highlight groups are
-auto applied on the |ColorScheme| event.
-
-Meant to be used for generating dynamic colors using `helpview.colors`.
-
-------------------------------------------------------------------------------
-
-Explained in more details in the |helpview-hls| section.
-
-TITLES                                                   *helpview-o-titles*
-
-Configuration table for the help file `titles`. Titles must follow the
-following structure.
->text
-	*Title* A description
-<
-Note: This only works for the first line of the document.
-
-
-	• {enable}              When false, this feature isn't used.
-
-	• {parts}               A list of 9 parts for making the border of the
-                            title. It consists of the following parts, 
-
->text
-	"top_left_corner",    "top_border",    "top_right_corner",
-	"middle_left_corner", "padding",       "middle_right_corner",
-	"bottom_left_corner", "bottom_border", "bottom_right_corner"
-<
-
-	• {hls}                 A list of 9 `highlight-groups` to color the 
-	                        border of the title.
-
-	• {title_hl}            Highlight group for coloring the title.
-	• {description_hl}      Highlight group for coloring the description.
-
-HEADINGS                                               *helpview-o-headings*
-
-Configuration table for decorating `h1`, `h2` & `h3` elements in help files.
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {heading_1}           Configuration table for `level 1 headings`.
-	• {heading_2}           Configuration table for `level 2 headings`.
-	• {heading_3}           Configuration table for `level 3 headings`.
-
-Heading options ~
-
-	• {style}               Style for the headings. Currently only supports
-	                        `decorated`.
-
-	• {parts}               A list of 9 parts for making the border of the
-                            title. It consists of the following parts, 
-
->text
-	"top_left_corner",    "top_border",    "top_right_corner",
-	"middle_left_corner", "padding",       "middle_right_corner",
-	"bottom_left_corner", "bottom_border", "bottom_right_corner"
-<
-	• {hls}                 A list of 9 `highlight-groups` to color the
-	                        border of the title.
-
-==============================================================================
-
-The following options provide `statusline-like` parts to decorate various
-inline elements.
-
-Warning: This may disrupt the flow of the document.
-
-INLINE ELEMENTS                                   *helpview-inline-elements*
-               *helpview-o-tags* *helpview-o-links* *helpview-o-option-links*
-       *helpview-o-arguments* *helpview-o-inline_codes* *helpview-o-keycodes*
-
-Inline elements have the following structure for adding decorations.
->text
-	█▒ ▣ Text▒█───── Corner right
-	││└┬┘└┬┬┘└────── Padding right
-	││ │  └┴──────── Text
-	││ └──────────── Icon
-	│└────────────── Padding left
-	└─────────────── Corner left
-
-<
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {corner_left}         Text for the left corner.
-	• {corner_left_hl}      Highlight group for {corner_left}.
-
-	• {padding_left}        Text for the left padding.
-	• {padding_left_hl}     Highlight group for {padding_left}.
-
-	• {icon}                Icon for the element.
-	• {icon_hl}             Highlight group for {icon}.
-
-	• {padding_right}       Text for the right padding.
-	• {padding_right_hl}    Highlight group for {padding_right}.
-
-	• {corner_right}        Text for the right corner.
-	• {corner_right_hl}     Highlight group for {corner_right}.
-
-	• {hl}                  Default highlight group for all the {_hl}
-	                        options.
-
-==============================================================================
-
-CODE BLOCKS                                         *helpview-o-code_blocks*
-
-Configuration table for code blocks in help files.
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {hl}                  Highlight group for the code blocks.
-	• {language_hl}         Highlight group for the language string in code
-	                        blocks.
-
-NOTES                                                     *helpview-o-notes*
-
-Configuration table for the various `note` types in help files.
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {default}             Default configuration table for notes. Used when
-	                        a note doesn't have a configuration table.
-
-	                        Has the options of |helpview-inline-elements|.
-
-	• {...}                 When the key name matches the text in the note
-	                        it's corresponding value is used.
-
-	                        Note: The key name is NOT case-sensitive.
-
-MODELINES                                              *helpview-o-modelines*
-
-Configuration table for showing the modeline string.
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {options}             Experimental option for handling options without
-	                        values.
-
-	• {icon_hl}             Highlight group for the modeline icon.
-	• {selector_hl}         Highlight group for the selector text.
-	• {surround_hl}         Highlight group for the `{}`.
-
-HORIZONTAL RULES                                             *helpview-o-hrs*
-
-Configuration table for the `horizontal rules`.
-
-Note: Horizontal rules aren't supported by vimdoc so edge cases may not
-be captured by the plugin.
-
-Options ~
-
-	• {enable}              When false, this feature isn't used.
-
-	• {parts}               A list of parts for making the horizontal rules.
-
-Parts ~
-
-There are currently 2 types of parts available,
 	• repeating
+
+      Repeats the given text.
+>lua
+		{
+			type = "simple",
+			text = "•",
+			repeat_amount = 10,
+
+			direction = "left",
+			hl = { "Gradient1", "Gradient2" }
+		}
+<
+	  It has the following options.
+
+		• {text}, the text to repeat.
+		• {repeat_amount}, the number of times to repeat the text.
+		  If the value is a function then the result is used.
+		• {direction}, the direction from which {hl} is applied from.
+		  When `left` it is applied from the left side and when `right` it
+		  is applied from the right side.
+		• {hl}, Highlight group(s) to apply can either be a string or a list
+		  of highlight groups.
+
 	• text
 
-Parts are identified using the {type} option.
+	  Shows some text.
 >lua
-	{ -- A valid part
-		type = "repeating" 
-
-		repeat_amount = 5,
-		text = "-", hl = "Special"
-	},
-	{ -- An invalid part
-		text = "Some text",
-		hl = "Normal"
-	}
-<
-
-Part: repeating ~
-
-Repeats the provided text a certain number of times. It supports the following
-options.
-
-	• {repeat_amount}       The number of times to repeat {text}. Can also be
-	                        a function.
-							The function will receive a table with the
-							following keys,
-                              • `width`, The |'textwidth'| of the file.
-							  • `width`, The width of the current window.
-
-	• {text}                Text to repeat.
-	• {hl}                  List of highlight groups to color {text}.
-	• {direction}           The side of text where the coloring should
-	                        begin. Possible values,
-                              • left
-	                          • right
-
-Example usage,
->lua
-	{
-		type = "repeating",
-		repeat_amount = function (info)
-			-- We will use some text that are 3 cells wide between
-			-- 2 repeating parts
-			return math.floor((info - 3) / 2);
-		end,
-
-		text = "─",
-
-		-- Highlight groups are going to be applied to the right
-		-- side of the final text
-		direction = "right"
-		hls = { "Gradient1", "Gradient2", "Gradient3", "Gradient4" }
-	}
-<
-
-Part: text ~
-
-Directly shows some text, optionally with a highlight group.
-
-	• {text}                Text to show.
-	• {hl}                  Highlight group for text.
-
-Example usage,
->lua
-	{
-		type = "text",
-
-		text = " o ",
-		hl = "Special"
-	}
-<
-
-==============================================================================
-Highlight groups                                              *helpview-hls*
-
-Highlight groups are used by the plugin to color various parts of the
-document. Though the plugin provides some default highlight groups, it is
-recommended that you use your own highlight groups(either from your config
-files or from some colorscheme/color-related plugins).
-
-The plugin comes with the following highlight groups.
-
-	• $HelpviewInlineCodes$                            *helpview-hl-InlineCodes*
-
-	  When |'bg'| is dark:
-
-	  25% fg color of $TablineSel$ & 15% bg color of $Normal$ is used for the
-	  background color.
-
-	  When |'bg'| is light:
-
-	  50% fg color of $TablineSel$ and 65% bg color of $Normal$ is used for
-	  the background color.
-
-	  Foreground color is inherited from $TablineSel$ group.
-
-	• $HelpviewTaglink$                                    *helpview-hl-Taglink*
-
-	  When |'bg'| is dark:
-
-	  25% fg color of $Title$ & 15% bg color of $Normal$ is used for the
-	  background color.
-
-	  When |'bg'| is light:
-
-	  50% fg color of $Title$ and 65% bg color of $Normal$ is used for
-	  the background color.
-
-	  Foreground color is inherited from $Title$ group.
-
-	• $HelpviewOptionlink$                              *helpview-hl-Optionlink*
-
-	  When |'bg'| is dark:
-
-	  25% fg color of $Tag$ & 15% bg color of $Normal$ is used for the
-	  background color.
-
-	  When |'bg'| is light:
-
-	  50% fg color of $Tag$ and 65% bg color of $Normal$ is used for
-	  the background color.
-
-	  Foreground color is inherited from $Tag$ group.
-
-	• $HelpviewMentionlink$                            *helpview-hl-Mentionlink*
-
-	  Foreground color is inherited from $Tag$ group.
-
-	  An underline is added.
-
-	• $HelpviewCodeBlocks$                              *helpview-hl-CodeBlocks*
-	  
-	  125% bg color of $Normal$ is used for the background color.
-
-	• $HelpviewCodeBlocksLanguage$              *helpview-hl-CodeBlocksLanguage*
-
-	  125% bg color of $Normal$ is used for the background color.
-
-	  Foreground color is inherited from $TablineSel$ group.
-
-	• $HelpviewGradient1$                                 *helpview-hl-Gradient*
-	  $HelpviewGradient2$
-	  $HelpviewGradient3$
-	  $HelpviewGradient4$
-	  $HelpviewGradient5$
-	  $HelpviewGradient6$
-	  $HelpviewGradient7$
-	  $HelpviewGradient8$
-	  $HelpviewGradient9$
-	  $HelpviewGradient10$
-
-	  A 2-stop gradient between the background color of $NormalR and the
-	  foreground color of $TablineSel$.
-
-------------------------------------------------------------------------------
-Setting highlight groups                                 *helpview-hl-usage*
-
-The {highlight_groups} option is used to sst various highlight groups. These
-highlight groups are re-applied on the |ColorScheme| event.
-
-It is a list containing various highlight groups. Each item in this list must
-have a {group_name} and a {value}.
->lua
-	highlight_groups = {
 		{
-			group_name = "hl1",
-			value = { fg = "red" }
+			type = "text",
+			text = "  ",
+			hl = "Title"
+		}
+<
+	  It has the following options.
+
+		• {text}, the text to show.
+		• {hl}, Highlight group to apply to the text.
+
+inline_codes ~
+>lua
+	inline_codes = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = " ",       -- Padding for the left side
+		padding_right = " ",      -- Padding for the right side
+
+		icon = "",                -- Icon to use
+		hl = "InlineCode"         -- Highlight group
+	}
+<
+keycodes ~
+>lua
+	keycodes = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = "",        -- Padding for the left side
+		padding_right = "",       -- Padding for the right side
+
+		icon = "󰌌 ",              -- Icon to use
+		hl = "Special"            -- Highlight group
+	}
+<
+mention_links ~
+>lua
+	mention_links = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = "",        -- Padding for the left side
+		padding_right = "",       -- Padding for the right side
+
+		icon = " ",              -- Icon to use
+		hl = "Mentionlink"        -- Highlight group
+	}
+<
+modelines ~
+
+Note: This is just a joke feature btw. 😐
+>lua
+	modelines = {
+		enable = true,           -- For toggling this feature
+
+		style = "expanded",      -- Style of the modeline
+
+		icon = " ",             -- Icon to use for the selector
+		selector = ".vim",       -- Text to use as the selector
+	}
+<
+There are currently 2 styles available,
+
+	• minimal, uses a single line to show everything.
+	• expanded, uses a new line for every option.
+
+notes ~
+>lua
+	notes = {
+		enable = true,            -- For toggling this feature
+
+		-- Default configuration
+		default = {
+			padding_left = nil,
+			padding_right = " ",
+
+			icon = " ",
+			hl = "@comment.note"
+		},
+
+		-- You can also use the notes text as the key to change it's
+		-- configuration
+		warning = {
+			padding_left = " ",
+			padding_right = " ",
+
+			icon = " ",
+			hl = "@comment.warn"
 		}
 	}
 <
-They are then passed to |nvim_set_hl()|.
-
-Items can also have an {output} key. In this case the value of {output} should
-be a `function` and the result should be a `list` of tables containing
-{group_name} and {value}.
+option_links ~
 >lua
-	highlight_groups = {
-		{
-			output = function ()
-				return {
-					{
-						group_name = "hl2",
-						value = { bg = "blue" }
-					},
-					{
-						group_name = "hl3",
-						value = { bg = "green" }
-					},
-				}
-			end
-		}
+	option_links = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = " ",       -- Padding for the left side
+		padding_right = " ",      -- Padding for the right side
+
+		icon = " ",              -- Icon to use
+		hl = "Optionlink"         -- Highlight group
 	}
 <
-The {value} can also be a `function`. In this case, it should return a table
-containing values supported by the {opts} key in |nvim_set_hl()|.
+tag_links ~
 >lua
-	highlight_groups = {
-		group_name = "hl4",
-		value = function ()
-			return { fg = "#cdd6f4", bg = "#1e1e2e" }
-		end
+	tag_links = {
+		enable = true,            -- For toggling this feature
+
+		padding_left = " ",       -- Padding for the left side
+		padding_right = " ",      -- Padding for the right side
+
+		icon = "",                -- Icon to use
+		hl = "Taglink"            -- Highlight group
 	}
 <
-All the highlight groups will by default have `Helpview` added before their
-group name.
-
-However, you can override this behavior by setting the {raw} key to `true`.
+title ~
 >lua
-	highlight_groups = {
-		{ -- Results in: HelpviewHl5
-			group_name = "hl5",
-			value = { bg = "white" }
-		},
-		{ -- Results in: Hl6
-			raw = true,
+	title = {
+		style = "simple",         -- Name of the rendering style
 
-			group_name = "hl6",
-			value = { bg = "black" }
-		},
+		parts = {},               -- Parts of the border when style is
+								  -- decorated
+		hl = "Title",             -- Highlight group for the title
 	}
 <
-You can use the various helper functions(mentioned in |helpview-hl-helpers|)
-to dynamically generate colors based on the colorscheme.
+	• {style}, Name of the style to use.
 
-Note: You need to add fallback colors for `transparent` colorschemes as
-they don't have a color set for the $Normal$ highlight group
+	  Currently available styles are.
 
-------------------------------------------------------------------------------
-Helper functions                                       *helpview-hl-helpers*
+		• simple
 
-The plugin comes with a few helper functions to easily create Dynamic
-|highlight-groups|.
-
-Color related helper functions can be used either through `helpview.colors` or
-by requiring the file Directly.
+		  Adds simple background color and icons!
 >lua
-	local helpview = require("helpview");
-	vim.print(helpview.colors.get_hl_value(0, "Special", "fg"));
+			{
+				style = "simple",
+
+				hl = "Title",
+				icon = " "
+			}
 <
-------------------------------------------------------------------------------
+		• decorated
 
-                                                       *helpview-helpers-lerp*
-colors.lerp({x}: number, {y}: number, {t}: number) -> number
+		  Adds border to the title.
+>lua
+			{
+				style = "decorated",
 
-	The mising `math.lerp()` function. Does `linear interpolation` between
-	x & y.
-
-	Parameters: ~
-
-		• {x}   The start value.
-		• {y}   The stop/end value.
-		• {t}   A float between 0.00 & 1.00 to interpolate to.
-
-	Result: ~
-
-		• {number} The interpolated value.
-
-                                                      *helpview-helpers-clamp*
-colors.clamp({value}: number, {min}: number, {max}: number) -> number
-
-	The mising `math.clamp()` function. Clamps a value between min & max.
-
-	Parameters: ~
-
-		• {value}   The value to clamp.
-		• {min}     Minimum value.
-		• {max}     Maximum value.
-           
-	Result: ~
-
-		• {number} The clamped value.
-
-                                                 *helpview-helpers-num_to_hex*
-colors.num_to_hex({num}: number) -> string
-
-	Turns numbers into hexadecimal string. A `#` is added before the
-	output string.
-
-	Used for converting |'guifg'|, |'guibg'| & |'guisp'| values provided
-	by |nvim_get_hl()| into human readable colors.
-
-	Parameters: ~
-
-		• {num}   Number to turn into hexadecimal.
-
-		          Warning: Small decimal values may not be correctly
-				  converted.
-
-	Result: ~
-		• {string}  The converted hexadecimal color.
-
-                                                 *helpview-helpers-num_to_rgb*
-colors.num_to_rgb({num}: number) -> { r: number, g: number, b: number }
-
-	Sperates color numbers into r, g, b values.
-
-	Rarely used for translating outputs of |nvim_get_hl()|.
-
-	Parameters: ~
-		• {num}   Number to seperate.
-
-	Result: ~
-		• {table} Table containing r, g, b values.
-
-                                                 *helpview-helpers-hex_to_rgb*
-colors.hex_to_rgb({str}: string) -> { r: number, g: number, b: number }
-
-	Seperates hex color codes to r, g, b colors.
-
-	Supports codes with or without `#` in front of them. Also supports 
-	`3-digit` & `6-digit` hex color codes.
-
-	Parameters: ~
-		• {str}   Hexadecimal string to seperate.
-
-	Result: ~
-		• {table} Table containing r, g, b values.
-
-                                                 *helpview-helpers-rgb_to_hex*
-colors.rgb_to_hex({ {r}: number, {g}: number, {b}: number }) -> string
-
-	Turns table containing r, g, b values into valid hex color codes.
-
-	Used internally for transforming color values.
-
-	Parameters: ~
-		• {tbl}   A table containing r, g, b values.
-
-	Result: ~
-		• {table} 6-digit hex color code.
-
-                                               *helpview-helpers-get_hl_value*
-colors.get_hl_value({ns_id}: number, {hl_group}: string, {value}: string)
-	-> any
-
-	A wrapper function for |nvim_get_hl()|.
-
-	Gets {value} of {hl_group} in the provided {ns_id}. If {value} is `fg`,
-	`bg` or `sp` the returned value will be a table containing the r, g, b
-	values. Otherwise the value is directly returned.
-
-	Parameters: ~
-		• {ns_id}      Namespace ID. See |namespace| for more information.
-		• {hl_group}   Highlight group name.
-		• {value}      The value to return.
-	
-	Result: ~
-		• {any}        Any of the value returned by |nvim_get_hl()|.
-
-                                             *helpview-helpers-create_gradient*
-colors.create_gradient(
-	{name_prefix}: string,
-
-	{from}: color,
-	{to}: color,
-
-	{steps}: number,
-	{mode}: string
-) -> { {group_name}: string, {value}: table }
-
-	Creates a list of `highlight groups` for the {highlight_groups} option.
-
-	A 2-stop gradient is generated between {from} & {to}. The value of
-	{from} & {to} can either be a number, string or a table with r, g, b
-	values.
-
-	The {mode} can be used to make the gradient into the background color or
-	the foreground color or both.
-
-	Parameters: ~
-		• {name_prefix}   The prefix to add before each of the {group_name}.
-
-		                  E.g. setting the {name_prefix} to "Gradient" will
-						  result in group names being "Gradient<n>" where
-						  "<n>" is the step number.
-
-		• {from}          The start color of the gradient. Can be a number,
-		                  a string or a table. It will be converted to a
-						  table containing r, g, b values.
-		• {to}            The stop color of the gradient. Works like {from}.
-
-		• {steps}         Number of steps in the gradient(including the start
-		                  and stop colors).
-		• {mode}          The color mode of the gradient. Possible values are,
-		                      • bg: Applies the color to the background.
-		                      • fg: Applies the color to the foreground.
-							  • both: Does all of the above.
-
-	Result: ~
-		• {table}         A list of tables containing a {group_name} and a
-		                  {value}. Mainly for use in {highlight_groups}.
-
-colors.mix(
-	{color_1}: color, {color_2}: color,
-	{per_1}: number, {per_2}: number
-) -> string
-
-	Mixes {color_1}, {color_2} to create a new color.
-
-	The value of {color_1} & {color_2} can either be a number, string
-	or a table with r, g, b values.
-
-	The {per_1} & {per_2} are floats between 0 & 1. They are used as % values
-	of the r, g, b values of the corresponding color. They are then added
-	together to make the new color.
-
-	Parameters: ~
-		• {color_1}       The first color to mix. Can be a number,
-		                  a string or a table. It will be converted to a
-						  table containing r, g, b values.
-		• {color_2}       The stop color of the gradient. Works like {color_1}.
-
-		• {per_1}         The % of {color_1} to mix.
-		• {per_2}         The % of {color_2} to mix.
-
-	Result: ~
-		• {string}        The hex color code of the resulting color.
-
-vim:ft=help:bt=help:textwidth=78:ts=4:nospell:
-
+				parts = {
+					"╭", "─", "╮",
+					"│", " ", "│",
+					"╰", "─", "╯"
+				},
+				hl = "Title"
+			}
+<
+vim:ft=help:nospell:tw=78:

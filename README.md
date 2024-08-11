@@ -1,24 +1,28 @@
 # Helpview.nvim
 
-A fancy viewer for `vimdoc`/`help` files.
-
->[!WARNING]
-> This plugin is in it's alpha phase. Breaking changes may occur.
+<p align="center">
+    Decorations for <code>vimdoc/help</code> files in Neovim.
+</p>
 
 ## Features
 
-- Fully customisable `inline elements`. Currently supported elements,
-  + tag
-  + taglink
-  + optionlink
-  + keycodes
-  + arguments
-  + notes(includes `Warning` & `deprecated` too?
-  + cosdespan
-- Modeline support.
-- Code block support with language string(no icons).
-- Various heading levels & title support.
-- Horizontal rules support.
+Helpview provides quite a few features such as,
+
+- Provides decorations for various vimdoc elements such as,
+  * Titles
+  * Headings
+  * Tags
+  * Tag links
+  * Option links
+  * Attributes
+  * Highlight group name(names surrounded with `$`).
+  * Horizontal rules
+  * Code blocks etc.
+- Hybrid mode for previewing and editing together.
+- Highly performant even on very large files.
+- Dynamic highlight groups!
+
+And a lot more to come.
 
 ## Requirements
 

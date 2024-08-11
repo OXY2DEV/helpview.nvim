@@ -2,6 +2,19 @@ local parser = {};
 
 parser.parsed_content = {};
 
+parser.ignore_opts = { "all" };
+
+parser.get_opt = function (text)
+	text = text:gsub("^no", "");
+	local out = vim.fn.getcompletion(text or "", "option");
+
+	for _, item in ipairs(out) do
+		if not vim.list_contains(parser.ignore_opts, item) then
+			return vim.api.nvim_get_option_info2(item, {});
+		end
+	end
+end
+
 parser.get_str_type = function (str)
 	if str:match("^true$") or str:match("^false$") then
 		return "boolean";
@@ -71,7 +84,7 @@ parser.vimdoc = function (buffer, TStree, from, to)
 					row_end = row_end,
 					col_end = d_col_end
 				});
-			elseif h_txt:match("%s*vim:([^:]*):") and h_start <= modelines or h_start >= (buf_lines - modelines) then
+			elseif h_txt:match("%s*vim:([^:]*):") and (h_start <= modelines or h_start >= (buf_lines - modelines)) then
 				local d_col_end = vim.fn.strchars(vim.api.nvim_buf_get_lines(buffer, row_start, row_start + 1, false)[1] or "");
 
 				table.insert(parser.parsed_content, {
@@ -89,17 +102,11 @@ parser.vimdoc = function (buffer, TStree, from, to)
 
 				for part in h_txt:gmatch("([^:]*)") do
 					if part:match("(%S*)=(%S*)") then
-						for opt, val in part:gmatch("(%S*)=(%S*)") do
-							table.insert(options, {
-								type = parser.get_str_type(val),
-								key = opt,
-								value = val
-							})
+						for opt, _ in part:gmatch("(%S*)=(%S*)") do
+							table.insert(options, parser.get_opt(opt))
 						end
-					elseif part ~= "" and part ~= "vim" then
-						table.insert(options, {
-							text = part
-						})
+					elseif part and part ~= "" and not part:match("^%s*(vim)") then
+						table.insert(options, parser.get_opt(part))
 					end
 				end
 
@@ -124,7 +131,9 @@ parser.vimdoc = function (buffer, TStree, from, to)
 					row_start = row_start,
 					col_start = col_start,
 
-					row_end = row_end - 1,
+					__r_end = row_end - 1,
+
+					row_end = row_end,
 					col_end = col_end
 				})
 			end
@@ -315,17 +324,11 @@ parser.vimdoc = function (buffer, TStree, from, to)
 
 			for part in capture_text:gmatch("([^:]*)") do
 				if part:match("(%S*)=(%S*)") then
-					for opt, val in part:gmatch("(%S*)=(%S*)") do
-						table.insert(options, {
-							type = parser.get_str_type(val),
-							key = opt,
-							value = val
-						})
+					for opt, _ in part:gmatch("(%S*)=(%S*)") do
+						table.insert(options, parser.get_opt(opt));
 					end
-				elseif part ~= "" and part ~= "vim" then
-					table.insert(options, {
-						text = part
-					})
+				elseif part ~= "" and not part:match("^%s*(vim)") then
+					table.insert(options, parser.get_opt(part))
 				end
 			end
 

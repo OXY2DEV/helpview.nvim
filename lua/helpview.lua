@@ -454,69 +454,11 @@ helpview.configuration = {
 	modelines = {
 		style = "expanded",
 
-		options = {
-			nospell = {
-				type = "boolean",
-
-				key = "spell",
-				value = "false"
-			},
-			ft = {
-				type = "string",
-
-				key = "filetype",
-				value = nil
-			},
-			bt = {
-				type = "string",
-
-				key = "buftype",
-				value = nil
-			},
-
-			tw = {
-				type = "number",
-
-				key = "textwidth",
-				value = nil
-			},
-			ts = {
-				type = "number",
-
-				key = "tabsize",
-				value = nil
-			},
-			isk = {
-				type = "string",
-
-				key = "iskeyword",
-				value = nil
-			},
-			norl = {
-				type = "boolean",
-
-				key = "rightleft",
-				value = "false"
-			},
-			noet = {
-				type = "boolean",
-
-				key = "expandtab",
-				value = "false"
-			}
-		},
-		type_hl = {
-			string = "@string",
-			number = "@number",
-			boolean = "@boolean"
-		},
-
-		icon_hl = "rainbow4",
+		icon_hl = "DiagnosticOk",
 		selector_hl = "@property.class.css",
 		surround_hl = "@punctuation.bracket",
 
 		option_hl = "@property.css",
-		seperator_hl = "@punctuation.delimiter"
 	},
 
 	notes = {
