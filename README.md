@@ -4,6 +4,10 @@
     Decorations for <code>vimdoc/help</code> files in Neovim.
 </p>
 
+![hybrid_mode](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_hybrid_mode.gif)
+![demo_mobile](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_demo_mobile.jpg)
+![demo_2](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_demo_1.jpg)
+
 ## Features
 
 Helpview provides quite a few features such as,
