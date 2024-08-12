@@ -90,6 +90,10 @@ You can install the plugin using `:Rocks install`.
 :Rocks install helpview.nvim
 ```
 
+### 👾 GitHub releases
+
+Check the [releases](https://github.com/OXY2DEV/helpview.nvim/releases) tab to download the latest release.
+
 ### Others
 
 Installation process for other plugin managers are similar.
