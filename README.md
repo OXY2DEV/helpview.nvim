@@ -82,6 +82,14 @@ MiniDeps.add({
 });
 ```
 
+### 🌒 Rocks.nvim
+
+You can install the plugin using `:Rocks install`.
+
+```vim
+:Rocks install helpview.nvim
+```
+
 ### Others
 
 Installation process for other plugin managers are similar.
@@ -122,4 +130,43 @@ The plugin comes with the `Helpview` command. It has the following sub-commands,
 ---
 
 Check out the help files(via `:h helpview.nvim`) to learn more!
+
+## Highlight groups
+
+For ease of configuration `helpview.nvim` comes with the following highlight groups.
+
+### 💻 Code blocks and Inline codes
+
+- `HelpviewCode`, background of code blocks. From `Normal`.
+- `HelpviewCodeLanguage`, background for language names. From `Comment`.
+
+### 🔖 Headings
+
+- `HelpviewHeading1`, from `DiagnosticOk`.
+- `HelpviewHeading2`, from `DiagnosticHint`.
+- `HelpviewHeading3`, from `DiagnosticInfo`.
+- `HelpviewHeading4`, from `Special`.
+
+### 📏 Horizontal rules
+
+- `HelpviewGradient1`, from `Normal`.
+- `HelpviewGradient2`
+- `HelpviewGradient3`
+- `HelpviewGradient4`
+- `HelpviewGradient5`
+- `HelpviewGradient6`
+- `HelpviewGradient7`
+- `HelpviewGradient8`
+- `HelpviewGradient9`
+- `HelpviewGradient10`, from `Tag`.
+
+### 🤔 Others
+
+- `HelpviewTaglink`, from `Title`.
+- `HelpviewOptionlink`, from `Tag`.
+- `HelpviewMentionlink`, from `Title`.
+
+### 📖 Title
+
+- `HelpviewTitle`, from `DiagnosticWarn`.
 
