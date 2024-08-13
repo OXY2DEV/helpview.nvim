@@ -29,7 +29,6 @@ helpview.add_hls = function (obj)
 			opt = hl.value();
 		end
 
-		opt.default = true;
 		vim.api.nvim_set_hl(0, hl.raw and hl.group_name or "Helpview" .. hl.group_name, opt);
 
 		::continue::
