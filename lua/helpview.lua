@@ -212,7 +212,10 @@ helpview.configuration = {
 		{
 			output = function ()
 				local bg = helpview.colors.bg();
-				local fg = helpview.colors.get_hl_value(0, "Comment", "fg");
+				local fg = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "Comment", "fg"),
+					vim.o.background == "dark" and "#6c7086" or "#9ca0b0"
+				});
 
 				local luminosity = helpview.colors.get_brightness(bg);
 
@@ -251,7 +254,10 @@ helpview.configuration = {
 			group_name = "InlineCode",
 			value = function ()
 				local bg = helpview.colors.bg();
-				local fg = helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg");
+				local fg = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg"),
+					vim.o.background == "dark" and "#6c7086" or "#9ca0b0"
+				});
 
 				local luminosity = helpview.colors.get_brightness(bg);
 
@@ -270,10 +276,19 @@ helpview.configuration = {
 		},
 		{
 			output = function ()
-				local bg = helpview.colors.get_hl_value(0, "Normal", "bg");
-				local tag_fg = helpview.colors.get_hl_value(0, "Title", "fg");
-				local taglink_fg = helpview.colors.get_hl_value(0, "Title", "fg");
-				local option_fg = helpview.colors.get_hl_value(0, "Tag", "fg");
+				local bg = helpview.colors.bg();
+				local tag_fg = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "Title", "fg"),
+					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
+				});
+				local taglink_fg = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "Title", "fg"),
+					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
+				});
+				local option_fg = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "Tag", "fg"),
+					vim.o.background == "dark" and "#b4befe" or "#7287fd"
+				});
 
 				if vim.o.background == "dark" then
 					return {
@@ -328,8 +343,12 @@ helpview.configuration = {
 		},
 		{
 			output = function ()
-				local from = helpview.colors.get_hl_value(0, "Normal", "bg") or "#1e1e2e";
-				local to = helpview.colors.get_hl_value(0, "@character", "fg") or helpview.colors.get_hl_value(0, "@comment.note", "fg");
+				local from = helpview.colors.bg();
+				local to = helpview.colors.get({
+					helpview.colors.get_hl_value(0, "@character", "fg"),
+					helpview.colors.get_hl_value(0, "@comment.note", "fg"),
+					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
+				});
 
 				return helpview.colors.create_gradient("Gradient", from, to, 10, "fg")
 			end
