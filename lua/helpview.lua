@@ -29,7 +29,9 @@ helpview.add_hls = function (obj)
 			opt = hl.value();
 		end
 
-		vim.api.nvim_set_hl(0, hl.raw and hl.group_name or "Helpview" .. hl.group_name, opt);
+		if type(opt) == "table" then
+			vim.api.nvim_set_hl(0, hl.raw and hl.group_name or "Helpview" .. hl.group_name, opt);
+		end
 
 		::continue::
 	end
