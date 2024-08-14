@@ -223,13 +223,19 @@ helpview.configuration = {
 					return {
 						{
 							group_name = "Code",
-							value = { bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)) }
+							value = {
+								bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)),
+
+								default = true
+							}
 						},
 						{
 							group_name = "CodeLanguage",
 							value = {
 								bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)),
-								fg = fg
+								fg = fg,
+
+								default = true
 							}
 						}
 					};
@@ -237,13 +243,19 @@ helpview.configuration = {
 					return {
 						{
 							group_name = "Code",
-							value = { bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1) }
+							value = {
+								bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1),
+
+								default = true
+							}
 						},
 						{
 							group_name = "CodeLanguage",
 							value = {
 								bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1),
-								fg = fg
+								fg = fg,
+
+								default = true
 							}
 						}
 					};
@@ -264,12 +276,16 @@ helpview.configuration = {
 				if luminosity < 0.5 then
 					return {
 						bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.5)),
-						fg = fg
+						fg = fg,
+
+						default = true
 					};
 				else
 					return {
 						bg = helpview.colors.mix(bg, bg, 1, math.min(luminosity, 0.15) * -1),
-						fg = fg
+						fg = fg,
+
+						default = true
 					};
 				end
 			end
@@ -296,21 +312,27 @@ helpview.configuration = {
 							group_name = "Taglink",
 							value = {
 								bg = helpview.colors.mix(tag_fg, bg, 0.25, 0.15),
-								fg = tag_fg
+								fg = tag_fg,
+
+								default = true
 							}
 						},
 						{
 							group_name = "Optionlink",
 							value = {
 								bg = helpview.colors.mix(option_fg, bg, 0.25, 0.15),
-								fg = option_fg
+								fg = option_fg,
+
+								default = true
 							}
 						},
 						{
 							group_name = "Mentionlink",
 							value = {
 								fg = taglink_fg,
-								underline = true
+								underline = true,
+
+								default = true
 							}
 						},
 					}
@@ -320,21 +342,27 @@ helpview.configuration = {
 							group_name = "Taglink",
 							value = {
 								bg = helpview.colors.mix(tag_fg, bg, 0.5, 0.65),
-								fg = tag_fg
+								fg = tag_fg,
+
+								default = true
 							}
 						},
 						{
 							group_name = "Optionlink",
 							value = {
 								bg = helpview.colors.mix(option_fg, bg, 0.5, 0.65),
-								fg = option_fg
+								fg = option_fg,
+
+								default = true
 							}
 						},
 						{
 							group_name = "Mentionlink",
 							value = {
 								fg = taglink_fg,
-								underline = true
+								underline = true,
+
+								default = true
 							}
 						},
 					}
@@ -350,7 +378,7 @@ helpview.configuration = {
 					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
 				});
 
-				return helpview.colors.create_gradient("Gradient", from, to, 10, "fg")
+				return helpview.colors.create_gradient("Gradient", from, to, 10, "fg", { default = true })
 			end
 		}
 	},

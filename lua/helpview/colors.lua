@@ -132,7 +132,7 @@ colors.get_hl_value = function (ns_id, hl_group, value)
 	end
 end
 
-colors.create_gradient = function (name_prefix, from, to, steps, mode)
+colors.create_gradient = function (name_prefix, from, to, steps, mode, config)
 	local start, stop;
 
 	if type(from) == "table" then
@@ -164,6 +164,8 @@ colors.create_gradient = function (name_prefix, from, to, steps, mode)
 			_o.bg = colors.rgb_to_hex({ r = r, g = g, b = b });
 			_o.fg = colors.rgb_to_hex({ r = r, g = g, b = b });
 		end
+
+		_o = vim.tbl_extend("force", _o, config or {});
 
 		table.insert(_t, {
 			group_name = (name_prefix or "") .. tostring(s + 1),
