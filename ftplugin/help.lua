@@ -103,6 +103,10 @@ vim.api.nvim_create_autocmd({ "ModeChanged", "TextChanged" }, {
 				return;
 			end
 
+			if vim.bo[buffer].filetype ~= "help" then
+				return;
+			end
+
 			mode = vim.api.nvim_get_mode().mode;
 
 			if event.event == "ModeChanged" or mode ~= cached_mode then
@@ -172,6 +176,10 @@ vim.api.nvim_create_autocmd(events, {
 		local buffer = event.buf;
 
 		if helpview.state.enable == false or helpview.state.buf_states[buffer] == false then
+			return;
+		end
+
+		if vim.bo[buffer].filetype ~= "help" then
 			return;
 		end
 
