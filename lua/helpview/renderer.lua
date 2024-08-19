@@ -225,7 +225,7 @@ renderer.component_renderer = function (buffer, data, config_table)
 	});
 
 	if config_table.hl then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
+		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, conceal_before and data.col_start + conceal_before or data.col_start, {
 			virt_text_pos = "overlay",
 			virt_text = {
 				{ data.text, renderer.set_hl(config_table.hl) }
