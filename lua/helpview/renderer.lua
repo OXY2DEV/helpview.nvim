@@ -234,7 +234,7 @@ renderer.component_renderer = function (buffer, data, config_table)
 
 			hl_mode = "combine",
 			virt_text_hide = true,
-			priority = 10,
+			priority = 15,
 			end_col = data.col_end
 		});
 	end
