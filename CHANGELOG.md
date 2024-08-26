@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/OXY2DEV/helpview.nvim/compare/v1.1.0...v1.1.1) (2024-08-26)
+
+
+### Bug Fixes
+
+* Fixed CHANGELOG ([b2cd2ab](https://github.com/OXY2DEV/helpview.nvim/commit/b2cd2ab53472e69aa8e3439540b31df56b9393ff))
+
 ## [1.1.0](https://github.com/OXY2DEV/helpview.nvim/compare/v1.0.1...v1.1.0) (2024-08-22)
 
 
