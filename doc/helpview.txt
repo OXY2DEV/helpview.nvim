@@ -42,10 +42,6 @@ For `lazy.lua` users.
 		"OXY2DEV/helpview.nvim",
 		lazy = false,    -- Recommended
 		-- ft = "help",  -- In case you still want to lazy load
-
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter"
-		}
 	}
 <
 For `plugins/helpview.lua` users.
@@ -54,10 +50,6 @@ For `plugins/helpview.lua` users.
 		"OXY2DEV/helpview.nvim",
 		lazy = false,    -- Recommended
 		-- ft = "help",  -- In case you still want to lazy load
-
-		dependencies = {
-			"nvim-treesitter/nvim-treesitter"
-		}
 	}
 <
 ------------------------------------------------------------------------------
@@ -67,10 +59,6 @@ For `plugins/helpview.lua` users.
 
 	MiniDeps.add({
 		source = "OXY2DEV/helpview.nvim",
-
-		depends = {
-			"nvim-treesitter/nvim-treesitter"
-		}
 	});
 <
 ------------------------------------------------------------------------------
@@ -78,13 +66,12 @@ For `plugins/helpview.lua` users.
 
 Installation process via other plugin managers are similar.
 >vim
-	Plug "nvim-treesitter/nvim-treesitter";
 	Plug "OXY2DEV/helpview.nvim";
 <
 ------------------------------------------------------------------------------
 🚀 Commands                                          *helpview.nvim-commands*
 
-The plugin provides a single command with a few sub-commands. It also 
+The plugin provides a single command with a few sub-commands. It also
 provides completion for the various sub-commands.
 
 To toggle the plugin, run the following command.

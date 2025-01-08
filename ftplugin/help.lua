@@ -1,19 +1,10 @@
-local helpview = require("helpview");
-local cursor_pos = {};
-
-local parser_installed = function(parser_name)
-	local ts_available, treesitter_parsers = pcall(require, "nvim-treesitter.parsers")
-
-	return (ts_available and pcall(treesitter_parsers, has_parser, parser_name)) or vim.treesitter.query.get(parser_name, "highlights")
-end
-
 if vim.fn.has("nvim-0.10") == 0 then
 	vim.notify(" [ Helpview.nvim ] : This plugin is only available for Neovim 0.10 and above! Aborting.", vim.log.levels.WARN)
 	return
-elseif not parser_installed("vimdoc") then
-	vim.notify(" [ Helpview.nvim ] : Treesitter parser for vimdoc isn't installed! Aborting.", vim.log.levels.WARN)
-	return
 end
+
+local helpview = require("helpview");
+local cursor_pos = {};
 
 if vim.islist(helpview.configuration.highlight_groups) then
 	helpview.add_hls(helpview.configuration.highlight_groups)

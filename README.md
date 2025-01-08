@@ -31,7 +31,6 @@ And a lot more to come.
 ## Requirements
 
 - Neovim version 0.10.0 or higher.
-- Treesitter parser for `vimdoc`(install it via `:TSInstall vimdoc` if you use `nvim-treesitter`).
 
 ## Installation
 
@@ -49,10 +48,6 @@ For `lazy.lua` users:
 
     -- In case you still want to lazy load
     -- ft = "help",
-
-    dependencies = {
-        "nvim-treesitter/nvim-treesitter"
-    }
 }
 ```
 
@@ -65,10 +60,6 @@ return {
 
     -- In case you still want to lazy load
     -- ft = "help",
-
-    dependencies = {
-        "nvim-treesitter/nvim-treesitter"
-    }
 }
 ```
 
@@ -79,10 +70,6 @@ local MiniDeps = require("mini.deps");
 
 MiniDeps.add({
     source = "OXY2DEV/helpview.nvim",
-
-    depends = {
-        "nvim-treesitter/nvim-treesitter"
-    }
 });
 ```
 
@@ -103,7 +90,6 @@ Check the [releases](https://github.com/OXY2DEV/helpview.nvim/releases) tab to d
 Installation process for other plugin managers are similar.
 
 ```vim
-Plug "nvim-treesitter/nvim-treesitter";
 Plug "OXY2DEV/helpview.nvim";
 ```
 
