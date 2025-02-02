@@ -1,6 +1,8 @@
 local spec = {};
 local health = require("helpview.health");
 
+--- Default configuration table.
+---@type helpview.config
 spec.default = {
 	---+${lua}
 
@@ -13,6 +15,7 @@ spec.default = {
 		-- hybrid_modes = { "n" },
 		-- linewise_hybrid_mode = true
 	},
+
 	vimdoc = {
 		headings = {
 			heading_1 = {
@@ -207,8 +210,13 @@ spec.default = {
 	---_
 };
 
+--- User configuration table.
+---@type helpview.config
 spec.config = vim.deepcopy(spec.default);
 
+--- Table containing functions for
+--- backwards compatibility
+---@type { [string]: fun(config: any): table}
 spec.fixup = {
 	---+
 
@@ -448,9 +456,15 @@ spec.fix_config = function (config)
 	---_
 end
 
+--- Updates user configuration table
+---@param config helpview.config
 spec.setup = function (config)
+	---+
+
 	config = spec.fix_config(config);
 	spec.config = vim.tbl_deep_extend("force", spec.config, config);
+
+	---_
 end
 
 --- Gets configuration option.

@@ -2,6 +2,7 @@ local helpview = {};
 local health = require("helpview.health");
 local spec = require("helpview.spec");
 
+---@type helpview.state
 helpview.state = {
 	enable = true,
 	attached_buffers = {},
@@ -111,6 +112,7 @@ end
 ---@param buffer integer?
 ---@return boolean
 helpview.buf_is_safe = function (buffer)
+	---+
 	if type(buffer) ~= "number" then
 		return false;
 	elseif vim.api.nvim_buf_is_valid(buffer) == false then
@@ -120,12 +122,14 @@ helpview.buf_is_safe = function (buffer)
 	end
 
 	return true;
+	---_
 end
 
 --- Checks if {window} is safe.
 ---@param window integer?
 ---@return boolean
 helpview.win_is_safe = function (window)
+	---+
 	if type(window) ~= "number" then
 		return false;
 	elseif vim.api.nvim_win_is_valid(window) == false then
@@ -135,12 +139,14 @@ helpview.win_is_safe = function (window)
 	end
 
 	return true;
+	---_
 end
 
 --- Can we attach to {buffer}?
 ---@param buffer integer?
 ---@return boolean
 helpview.can_attach = function (buffer)
+	---+
 	helpview.clean();
 
 	if helpview.buf_is_safe(buffer) == false then
@@ -150,12 +156,14 @@ helpview.can_attach = function (buffer)
 	end
 
 	return true;
+	---_
 end
 
 --- Can we draw on {buffer}?
 ---@param buffer integer
 ---@return boolean
 helpview.can_draw = function (buffer)
+	---+
 	helpview.clean();
 
 	if helpview.buf_is_safe(buffer) == false then
@@ -165,13 +173,18 @@ helpview.can_draw = function (buffer)
 	end
 
 	return true;
+	---_
 end
 
 --- Clears all previews from {buffer}.
 ---@param buffer integer
 helpview.clear = function (buffer)
+	---+
+
 	buffer = buffer or vim.api.nvim_get_current_buf();
 	require("helpview.renderer").clear(buffer, 0, -1);
+
+	---_
 end
 
 --- Renders preview to {buffer}.
@@ -346,13 +359,19 @@ helpview.splitview_render = function ()
 	--- deleted, we should regenerate them.
 	helpview.actions.__splitview_setup();
 
+	---@type integer
 	local max_lines = spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
+	---@type integer
 	local line_count = vim.api.nvim_buf_line_count(buffer);
 
+	---@type integer
 	local main_win = utils.buf_getwin(buffer);
+	---@type [ integer, integer ]
 	local cursor = vim.api.nvim_win_get_cursor(main_win);
 
+	---@type integer
 	local pre_buf = helpview.state.splitview_buffer;
+	---@type integer
 	local pre_win = helpview.state.splitview_window;
 
 	local lines = vim.api.nvim_buf_get_lines(
@@ -379,7 +398,10 @@ helpview.splitview_render = function ()
 end
 
 --- Actions for helpview.
+---@type { [string]: function }
 helpview.actions = {
+	---+
+
 	["__exec_callback"] = function (callback, ...)
 		if vim.list_contains({ "string", "integer" }, type(callback)) == false then
 			return;
@@ -857,6 +879,8 @@ helpview.actions = {
 		end
 		---_
 	end
+
+	---_
 };
 
 --- Holds various functions that you can run
@@ -1073,6 +1097,8 @@ helpview.commands = {
 	---_
 };
 
+--- Setup function.
+---@param user_config? table
 helpview.setup = function (user_config)
 	require("helpview.spec").setup(user_config);
 end
