@@ -1,503 +1,369 @@
 local renderer = {};
-local languages = require("helpview.languages");
+-- local health = require("markview.health");
 
-local tbl_clamp = function (entry, index)
-	if type(entry) ~= "table" then
-		return entry;
+renderer.vimdoc = require("helpview.renderers.vimdoc");
+
+renderer.cache = {};
+
+renderer.__filter_cache = {
+	config = nil,
+	result = nil
+};
+
+renderer.option_maps = {
+	---+${lua}
+	vimdoc = {
+		headings = { "vimdoc_heading" },
+		modelines = { "vimdoc_modeline" },
+		code_blocks = { "vimdoc_code_block" },
+		inline_codes = { "vimdoc_inline_code" },
+		arguments = { "vimdoc_argument" },
+		notes = { "vimdoc_note" },
+		keycodes = { "vimdoc_keycode" },
+		option_links = { "vimdoc_optionlink" },
+		tag_links = { "vimdoc_taglink" },
+		tags = { "vimdoc_tag" },
+		highlights = { "vimdoc_hl" },
+		horizontal_rules = { "vimdoc_hr" }
+	}
+	---_
+};
+
+--- Creates node class filters for hybrid mode.
+---@param filter preview.ignore?
+---@return { [string]: string[] }
+local create_filter = function (filter)
+	---+${lua}
+	local spec = require("helpview.spec");
+
+	--- Ignore queries.
+	---@type preview.ignore
+	local filters = filter or spec.get({ "preview", "ignore_previews" }, { fallback = {}, ignore_enable = true });
+
+	--- To save time, do not recalculate these if the
+	--- configuration hasn't changed.
+	if vim.deep_equal(renderer.__filter_cache.config, filters) == true then
+		--- Configuration has most likely not changed.
+		--- Return the cached value.
+		return renderer.__filter_cache.result;
 	end
 
-	if index >= #entry then
-		return entry[#entry];
-	else
-		return entry[index];
-	end
-end
+	--- Resulting filter.
+	local _f = {};
 
-local get_win = function (buffer)
-	local wins = vim.api.nvim_list_wins();
+	--- Checks if a value is valid by matching all
+	--- the provided queries against it.
+	---@param value string
+	---@param queries string[]
+	---@return boolean
+	local is_valid = function (value, queries)
+		---+${lua}
 
-	for _, win in ipairs(wins) do
-		if vim.api.nvim_win_get_buf(win) == buffer then
-			return win;
-		end
-	end
-end
+		for q, query in ipairs(queries or {}) do
+			--- Queries that were already passed.
+			local passed = vim.list_slice(queries, 0, q - 1);
 
-renderer.set_hl = function (hl)
-	if type(hl) ~= "string" then
-		return;
-	end
-
-	if vim.fn.hlexists("Helpview" .. hl) == 1 then
-		return "Helpview" .. hl;
-	elseif vim.fn.hlexists("Helpview_" .. hl) == 1 then
-		return "Helpview_" .. hl;
-	else
-		return hl;
-	end
-end
-
-renderer.namespace = vim.api.nvim_create_namespace("helpview");
-
-renderer.render_headings = function (buffer, data, global_config, buffer_info)
-	if not global_config or not global_config.headings or global_config.headings.enable == false then
-		return;
-	end
-
-	local heading_config = global_config.headings or {};
-
-	local conf = heading_config["heading_" .. data.level];
-
-	if data.delimiter then
-		local marker = vim.fn.strcharpart(data.delimiter, 0, 1);
-
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			virt_text_pos = "overlay",
-			virt_text = {
-				{ string.rep(conf.marker or marker or "", vim.o.columns), renderer.set_hl(conf.sign_hl or conf.hl) }
-			},
-
-			priority = 100,
-
-			end_row = data.row_end
-		});
-	elseif conf.marker then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			virt_lines_above = true,
-			virt_lines = {
-				{
-					{ string.rep(conf.marker, vim.o.columns), renderer.set_hl(conf.sign_hl or conf.hl) }
-				}
-			}
-		});
-	elseif conf.hl then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			hl_group = renderer.set_hl(conf.hl),
-			priority = 100,
-
-			end_col = data.col_end
-		});
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.__r_end or data.row_end, vim.fn.strchars(data.text), {
-		virt_text_pos = "right_align",
-		virt_text = {
-			{ conf.sign or " ", renderer.set_hl(conf.sign_hl or conf.hl) }
-		},
-
-		line_hl_group = renderer.set_hl(conf.hl),
-		priority = 1,
-		hl_mode = "combine",
-	});
-end
-
-renderer.render_horizontal_rules = function (buffer, data, config_table, buffer_info)
-	if not config_table or config_table.enable == false then
-		return;
-	end
-
-	local _v = {};
-
-	for _, part in ipairs(config_table.parts or {}) do
-		if part.type == "repeating" then
-			local repeat_amount = 0;
-
-			if type(part.repeat_amount) == "function" and pcall(part.repeat_amount, buffer_info) then
-				repeat_amount = part.repeat_amount(buffer_info);
+			if string.match(query, "^%!") then
+				if value == string.sub(query, 2) then
+					--- Part of negation query.
+					return false;
+				elseif vim.list_contains(passed, value) then
+					--- Already part of the query.
+					return true;
+				end
+			elseif value == query then
+				--- Valid value.
+				return true;
 			else
-				repeat_amount = part.repeat_amount;
+				--- Invalid value.
+				return false;
 			end
+		end
 
-			if part.direction == nil or part.direction == "left" then
-				for r = 1, repeat_amount do
-					table.insert(_v, {
-						tbl_clamp(part.text or "─", r),
-						renderer.set_hl(tbl_clamp(part.hl, r))
-					})
-				end
-			else
-				for r = 1, repeat_amount do
-					--- NOTE: Can't be 0
-					table.insert(_v, {
-						tbl_clamp(part.text or "─", (repeat_amount - r) + 1),
-						renderer.set_hl(tbl_clamp(part.hl, (repeat_amount - r) + 1))
-					})
-				end
+		--- All conditions matched!
+		return true;
+		---_
+	end
+
+	--- Creates a list of valid options for {language}.
+	---@param language string
+	---@param options string[]
+	---@return string[]
+	local function language_filter (language, options)
+		---+${lua}
+
+		---@type string[] Filters for this language.
+		local queries = filters[language];
+
+		if vim.islist(queries) == false then
+			--- Filter is invalid.
+			return options;
+		elseif #queries == 0 then
+			--- Filter is empty.
+			return {};
+		end
+
+		---@type string[] Valid options.
+		local _m = {};
+
+		for _, item in ipairs(options) do
+			if is_valid(item, queries) == true then
+				table.insert(_m, item);
 			end
-		elseif part.type == "text" then
-			table.insert(_v, { part.text, renderer.set_hl(part.hl) });
+		end
+
+		return _m;
+		---_
+	end
+
+	--- Registers a new entry to {language}.
+	---@param language string
+	---@param classes string[]
+	local function register (language, classes)
+		---+${lua}
+		if vim.islist(_f[language]) == false then
+			_f[language] = {};
+		end
+
+		for _, class in ipairs(classes or {}) do
+			if type(class) == "string" and vim.list_contains(_f[language], class) == false then
+				table.insert(_f[language], class);
+			end
+		end
+		---_
+	end
+
+	for language, maps in pairs(renderer.option_maps) do
+		--- Copy the values as we don't want to
+		--- accidentally modify the mapping table.
+		local valid_options = language_filter(language, vim.tbl_keys(maps));
+
+		if vim.islist(_f[language]) == false then
+			_f[language] = {};
+		end
+
+		for _, option in ipairs(valid_options) do
+			local nodes = maps[option];
+			register(language, nodes);
 		end
 	end
 
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-		virt_text_pos = "overlay",
-		virt_text = _v,
+	--- Cache values.
+	renderer.__filter_cache.config = filters;
+	renderer.__filter_cache.result = _f;
 
-		end_col = data.col_end,
-		conceal = "",
-
-		hl_mode = "combine"
-	});
+	return _f;
+	---_
 end
 
-renderer.render_title = function (buffer, data, config_table, buffer_info)
-	if not config_table or config_table.enable == false then
-		return;
+--- Range modifiers for various nodes.
+---@type { [string]: fun(range: node.range): node.range }
+renderer.range_modifiers = {
+};
+
+--- Fixes node ranges for `hybrid mode`.
+---@param class string
+---@param range node.range
+---@return node.range
+renderer.fix_range = function (class, range)
+	if renderer.range_modifiers[class] == nil then
+		return range;
 	end
 
-	if config_table.style == "simple" then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			virt_text_pos = "right_align",
-			virt_text = {
-				{ config_table.sign or " ", renderer.set_hl(config_table.sign_hl or config_table.hl) }
-			},
-
-			line_hl_group = renderer.set_hl(config_table.hl),
-			hl_mode = "combine"
-		});
-	elseif config_table.style == "custom" then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			virt_text_pos = "right_align",
-			virt_text = config_table.virt_text,
-
-			line_hl_group = renderer.set_hl(config_table.hl),
-			hl_mode = "combine"
-		});
-	elseif config_table.style == "decorated" then
-		local top_decorations_len = vim.fn.strchars((config_table.parts[1] or "") .. " " .. (data.description or "") .. " " .. (config_table.parts[3] or ""))
-		local title_length = vim.fn.strchars((config_table.parts[4] or "") .. " " .. data.title .. " " .. (config_table.parts[6] or ""))
-		local Bottom_decorations_len = vim.fn.strchars((config_table.parts[7] or "").. (config_table.parts[9] or ""))
-
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-			virt_text_pos = "overlay",
-			virt_text = {
-				{ tbl_clamp(config_table.parts, 1) or "", renderer.set_hl(tbl_clamp(config_table.hl, 1)) },
-				{ string.rep(tbl_clamp(config_table.parts, 2) or "", buffer_info.width - top_decorations_len), renderer.set_hl(tbl_clamp(config_table.hl, 4)) },
-				{ " " .. (data.description or "") .. " ", renderer.set_hl(config_table.description_hl) },
-				{ tbl_clamp(config_table.parts, 3) or "", renderer.set_hl(tbl_clamp(config_table.hl, 1)) },
-			},
-			virt_lines = {
-				{
-					{ tbl_clamp(config_table.parts, 4) or "", renderer.set_hl(tbl_clamp(config_table.hl, 4)) },
-					{ " " },
-					{ data.title, renderer.set_hl(config_table.title_hl) },
-					{ string.rep(tbl_clamp(config_table.parts, 5) or "", buffer_info.width - title_length), renderer.set_hl(tbl_clamp(config_table.hl, 5)) },
-					{ " " },
-					{ tbl_clamp(config_table.parts, 6) or "", renderer.set_hl(tbl_clamp(config_table.hl, 6)) },
-				},
-				{
-					{ tbl_clamp(config_table.parts, 7) or "", renderer.set_hl(tbl_clamp(config_table.hl, 7)) },
-					{ string.rep(tbl_clamp(config_table.parts, 8) or "", buffer_info.width - Bottom_decorations_len), renderer.set_hl(tbl_clamp(config_table.hl, 8)) },
-					{ tbl_clamp(config_table.parts, 9) or "", renderer.set_hl(tbl_clamp(config_table.hl, 9)) },
-				}
-			},
-
-			hl_mode = "combine"
-		});
-	end
+	return renderer.range_modifiers[class](range);
 end
 
-renderer.component_renderer = function (buffer, data, config_table)
-	if not config_table or config_table.enable == false then
-		return;
-	end
+--- Filters provided content.
+--- [Used for hybrid mode]
+---@param content table
+---@param filter table?
+---@param clear [ integer, integer ]
+---@return table
+renderer.filter = function (content, filter, clear)
+	---+${lua}
 
-	local conceal_before, conceal_after = config_table.conceal_before, config_table.conceal_after;
-
-	if config_table.conceal_before and pcall(config_table.conceal_before, data) then
-		conceal_before = config_table.conceal_before(data);
-	end
-
-	if config_table.conceal_after and pcall(config_table.conceal_after, data) then
-		conceal_after = config_table.conceal_after(data);
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config_table.padding_left or "", renderer.set_hl(config_table.hl) },
-			{ config_table.icon or "", renderer.set_hl(config_table.hl) }
-		},
-
-		priority = 10,
-		end_col = conceal_before and data.col_start + conceal_before or nil,
-		conceal = conceal_before and "" or nil
-	});
-
-	if config_table.hl then
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, conceal_before and data.col_start + conceal_before or data.col_start, {
-			virt_text_pos = "overlay",
-			virt_text = {
-				{ data.text, renderer.set_hl(config_table.hl) }
-			},
-			hl_group = renderer.set_hl(config_table.hl),
-
-			hl_mode = "combine",
-			virt_text_hide = true,
-			priority = 15,
-			end_col = data.col_end
-		});
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_end - (conceal_after or 0), {
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config_table.padding_right or "", renderer.set_hl(config_table.hl) },
-		},
-
-		priority = 10,
-
-		end_col = conceal_after and data.col_end or nil,
-		conceal = conceal_after and "" or nil
-	});
-end
-
-renderer.render_notes = function (buffer, data, config_table)
-	if not config_table or config_table.enable == false then
-		return;
-	end
-
-	local conf = config_table.default;
-
-	for key, value in pairs(config_table) do
-		if key ~= "default" and key:upper() == data.text:upper() then
-			conf = value;
-			break;
+	--- Checks if {pos} is inside of {range}.
+	---@param range node.range
+	---@param pos [ integer, integer ]
+	---@return boolean
+	local within = function (range, pos)
+		---+${lua}
+		if type(range) ~= "table" then
+			return false;
+		elseif type(range.row_start) ~= "number" or type(range.row_end) ~= "number" then
+			return false;
+		elseif vim.islist(pos) == false then
+			return false;
+		elseif type(pos[1]) ~= "number" or type(pos[2]) ~= "number" then
+			return false;
+		elseif pos[1] >= range.row_start and pos[2] <= range.row_end then
+			return true;
 		end
+
+		return false;
+		---_
 	end
 
-	renderer.component_renderer(buffer, data, conf)
-end
+	---@type [ integer, integer ] Range to clear.
+	local clear_range = vim.deepcopy(clear);
 
-renderer.render_hl = function (buffer, data, config_table)
-	if not config_table or config_table.enable == false then
-		return;
+	--- Updates the range to clear.
+	---@param new [ integer, integer ]
+	local range_update = function (new)
+		---+${lua}
+		if new[1] <= clear_range[1] and new[2] >= clear_range[2] then
+			clear_range[1] = new[1];
+			clear_range[2] = new[2];
+		end
+		---_
 	end
 
-	local hl = data.name;
+	--- Node filters.
+	---@type preview.ignore
+	local result_filters = create_filter(filter);
 
-	if config_table.aliases and config_table.aliases[data.name] then
-		hl = config_table.aliases[data.name];
-	end
+	---@type { [string]: table }
+	local indexes = {};
 
-	if vim.fn.hlexists(hl) ~= 1 then
-		return;
-	end
+	--- Create a range to clear.
+	for lang, items in pairs(content) do
+		---+${lua}
 
-	renderer.component_renderer(buffer, data, vim.tbl_extend("force", config_table, {
-		hl = hl,
+		--- Filter for this language.
+		---@type string[]?
+		local lang_filter = result_filters[lang];
 
-		conceal_before = 1,
-		conceal_after = 1
-	}));
-end
+		if lang_filter == nil then
+			goto continue;
+		end
 
-renderer.render_code_blocks = function (buffer, data, config_table, buffer_info)
-	if not config_table or config_table.enable == false then
-		return;
-	end
+		indexes[lang] = {};
 
-	local block_size = buffer_info.win_width;
-	local icon = languages.get(data.language);
-	local name = languages.name(data.language);
+		for n, node in ipairs(items) do
+			if vim.list_contains(lang_filter, node.class) then
+				local range = renderer.fix_range(node.class, node.range);
+				table.insert(indexes[lang], { n, range, node.class });
 
-	local start_seg = " " .. icon .. name;
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, 0, {
-		virt_lines = {
-			{
-				{ start_seg, config_table.language_hl },
-				{ string.rep(" ", block_size - vim.fn.strchars(start_seg)), config_table.hl },
-			}
-		},
-		hl_mode = "combine",
-		priority = 1
-	})
-
-	vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_end - 1, 0, {
-		virt_lines = {
-			{
-				{ string.rep(" ", block_size), config_table.hl },
-			}
-		},
-		hl_mode = "combine",
-		priority = 1
-	})
-
-	for i = 1, data.row_end - data.row_start - 1 do
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start + i, 0, {
-			line_hl_group = config_table.hl,
-			hl_mode = "combine",
-			priority = 1
-		})
-	end
-end
-
-renderer.render_modeline = function (buffer, data, config_table)
-	if not config_table or config_table.enable == false then
-		return;
-	end
-
-	if config_table.style == "minimal" then
-		local _v = {
-			{ config_table.icon or "  ", config_table.icon_hl },
-			{ config_table.selector or ".vim ", config_table.selector_hl },
-			{ "{ ", config_table.surround_hl }
-		};
-
-		for _, option in ipairs(data.options or {}) do
-			local val = vim.o[option.name];
-
-			if type(val) == "string" then
-				if val:match('"') then
-					val = "'" .. val .. "'";
-				elseif val:match("'") then
-					val = '"' .. val .. '"';
-				elseif val:match([[ ["'] ]]) then
-					val = "[[ " .. val .. " ]]";
-				else
-					val = '"' .. val .. '"';
+				if within(node.range, clear_range) == true then
+					range_update({ range.row_start, range.row_end });
 				end
 			end
-
-			table.insert(_v, { option.name .. ": ", renderer.set_hl(config_table.option_hl) });
-			table.insert(_v, { tostring(val) or "nil", renderer.set_hl("@" .. option.type) });
-			table.insert(_v, { "; ", "@punctuation.delimiter" });
 		end
 
-		table.insert(_v, { "}", config_table.surround_hl })
+		::continue::
+		---_
+	end
 
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-			virt_text_pos = "overlay",
-			virt_text = _v,
+	--- Remove the nodes inside the `clear_range`.
+	for lang, references in pairs(indexes) do
+		---+${lua}
 
-			hl_mode = "combine",
+		--- Amount of nodes removed in this language.
+		--- Used for offsetting the index for later nodes.
+		local removed = 0;
 
-			end_col = data.col_end,
-			conceal = ""
-		})
-	elseif config_table.style == "expanded" then
-		local _v = {
-			{
-				{ config_table.icon or "  ", config_table.icon_hl },
-				{ config_table.selector or ".nvim ", config_table.selector_hl },
-				{ "{ ", config_table.surround_hl }
-			}
-		};
+		for _, ref in ipairs(references) do
+			local range = ref[2];
+			-- vim.print(range.row_start .. ":" .. range.row_end)
 
-		for _, option in ipairs(data.options or {}) do
-			local _l = { { "	" }};
-			local val = vim.o[option.name];
-
-			if type(val) == "string" then
-				if val:match('"') then
-					val = "'" .. val .. "'";
-				elseif val:match("'") then
-					val = '"' .. val .. '"';
-				elseif val:match([[ ["'] ]]) then
-					val = "[[ " .. val .. " ]]";
-				else
-					val = '"' .. val .. '"';
-				end
+			if range.row_start >= clear_range[1] and range.row_end <= clear_range[2] then
+				table.remove(content[lang], ref[1] - removed);
+				removed = removed + 1;
 			end
-
-			table.insert(_l, { option.name .. ": ", renderer.set_hl(config_table.option_hl) });
-			table.insert(_l, { tostring(val) or "nil", renderer.set_hl("@" .. option.type) });
-			table.insert(_l, { "; ", "@punctuation.delimiter" });
-
-			table.insert(_v, _l)
 		end
-
-		vim.api.nvim_buf_set_extmark(buffer, renderer.namespace, data.row_start, data.col_start, {
-			virt_lines_above = true;
-			virt_lines = _v,
-
-			virt_text_pos = "overlay",
-			virt_text = {
-				{ "}", config_table.surround_hl }
-			},
-
-			hl_mode = "combine",
-
-			end_col = data.col_end,
-			conceal = ""
-		})
+		---_
 	end
+
+	return content;
+	---_
 end
 
-renderer.render = function (buffer, parsed_content, config_table, buffer_info)
-	if not _G.__helpview_views then
-		_G.__helpview_views = {};
-	end
+--- Renders things
+---@param buffer integer
+renderer.render = function (buffer, parsed_content)
+	---+${lua}
 
-	if parsed_content then
-		_G.__helpview_views[buffer] = parsed_content
-	end
+	renderer.cache = {};
 
-	-- vim.print(#parsed_content)
-	for _, data in ipairs(_G.__helpview_views[buffer]) do
-		if data.type == "heading" then
-			pcall(renderer.render_headings, buffer, data, config_table, buffer_info);
-		elseif data.type == "title" then
-			pcall(renderer.render_title, buffer, data, config_table.title, buffer_info)
-		elseif data.type == "highlight_group" then
-			pcall(renderer.render_hl, buffer, data, config_table.group_names)
-		elseif data.type == "tag" then
-			pcall(renderer.component_renderer, buffer, data, config_table.tag_links)
-		elseif data.type == "link" then
-			pcall(renderer.component_renderer, buffer, data, config_table.mention_links)
-		elseif data.type == "option_link" then
-			pcall(renderer.component_renderer, buffer, data, config_table.option_links)
-		elseif data.type == "key_code" then
-			pcall(renderer.component_renderer, buffer, data, config_table.keycodes)
-		elseif data.type == "argument" then
-			pcall(renderer.component_renderer, buffer, data, config_table.arguments)
-		elseif data.type == "inline_code" then
-			pcall(renderer.component_renderer, buffer, data, config_table.inline_codes)
-		elseif data.type == "note" then
-			pcall(renderer.render_notes, buffer, data, config_table.notes)
-		elseif data.type == "code_block" then
-			pcall(renderer.render_code_blocks, buffer, data, config_table.code_blocks, buffer_info)
-		elseif data.type == "modeline" then
-			pcall(renderer.render_modeline, buffer, data, config_table.modelines)
-		elseif data.type == "horizontal_rule" then
-			pcall(renderer.render_horizontal_rules, buffer, data, config_table.horizontal_rules, buffer_info)
+	-- ---+${lua, Announce start of rendering}
+	-- ---@type integer
+	-- local start = vim.uv.hrtime();
+	--
+	-- health.notify("trace", {
+	-- 	level = 1,
+	-- 	message = string.format("Rendering(main): %d", buffer)
+	-- });
+	-- health.__child_indent_in();
+	-- ---_
+
+	for lang, content in pairs(parsed_content or {}) do
+		if renderer[lang] then
+			local c = renderer[lang].render(buffer, content);
+			renderer.cache = vim.tbl_extend("force", renderer.cache, c or {});
 		end
 	end
-end
 
-renderer.updateView = function (buffer, parsed_content)
-	if not _G.__helpview_views then
-		_G.__helpview_views = {};
+	-- ---+${lua, Announce end of main render}
+	-- local post = vim.uv.hrtime();
+	--
+	-- health.notify("trace", {
+	-- 	level = 3,
+	-- 	message = string.format("Render(main): %dms", (post - start) / 1e6)
+	-- });
+	-- ---_
+
+	for lang, content in pairs(renderer.cache) do
+		if renderer[lang] then
+			renderer[lang].post_render(buffer, content);
+		end
 	end
 
-	if parsed_content then
-		_G.__helpview_views[buffer] = parsed_content
-	end
+	-- ---+${lua, Announce end of rendering}
+	-- local now = vim.uv.hrtime();
+	--
+	-- --- Announce end of post rendering.
+	-- health.notify("trace", {
+	-- 	level = 3,
+	-- 	message = string.format("Render(post): %dms", (now - post) / 1e6)
+	-- });
+	--
+	-- health.__child_indent_de();
+	-- health.notify("trace", {
+	-- 	level = 3,
+	-- 	message = string.format("Rendering(end, %dms): %d", (now - start) / 1e6, buffer)
+	-- });
+	-- ---_
+
+	---_
 end
 
 renderer.clear = function (buffer, from, to)
-	vim.api.nvim_buf_clear_namespace(buffer, renderer.namespace, from or 0, to or -1);
-end
+	local langs = { "vimdoc" };
+	-- local start = vim.uv.hrtime();
 
-renderer.get_content_range = function (content)
-	local min, max;
+	-- ---+${lua, Announce start of clearing}
+	-- health.notify("trace", {
+	-- 	level = 1,
+	-- 	message = string.format("Clearing: %d", buffer)
+	-- });
+	-- health.__child_indent_in();
+	-- ---_
 
-	for _, data in ipairs(content) do
-		if not min or data.row_start < min then
-			min = data.row_start;
-		end
-
-		if not max or data.row_end > max then
-			max = data.row_end;
+	for _, lang in ipairs(langs) do
+		if renderer[lang] then
+			renderer[lang].clear(buffer, from, to);
 		end
 	end
 
-	if min and max and min == max then
-		max = max + 1;
-	end
-
-	return min, max;
+	-- ---+${lua, Announce end of clearing}
+	-- local now = vim.uv.hrtime();
+	--
+	-- health.__child_indent_de();
+	-- health.notify("trace", {
+	-- 	level = 3,
+	-- 	message = string.format("Clearing(end, %dms): %d", (now - start) / 1e6, buffer)
+	-- });
+	-- ---_
 end
 
 return renderer;
