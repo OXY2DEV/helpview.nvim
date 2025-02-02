@@ -7,6 +7,8 @@ spec.default = {
 		-- enable = false,
 		modes = { "n" },
 		max_buf_lines = 500,
+
+		filetypes = { "help" },
 		-- hybrid_modes = { "n" },
 		-- linewise_hybrid_mode = true
 	},
@@ -212,6 +214,10 @@ spec.setup = function (config)
 	end
 end
 
+--- Gets configuration option.
+---@param keys string[]
+---@param opts { fallback: any, source: table?, ignore_enable : boolean }
+---@return any
 spec.get = function (keys, opts)
 	keys = keys or {};
 	opts = opts or {};

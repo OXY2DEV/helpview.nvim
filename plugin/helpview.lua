@@ -1,21 +1,30 @@
+--- Functionality provider for `helpview.nvim`.
+--- Functionalities that are implemented,
+---
+---   + Buffer registration.
+---   + Command.
+---   + Dynamic highlight groups.
+---
+--- **Author**: MD. Mouinul Hossain Shawon (OXY2DEV)
+
 local helpview = require("helpview");
 local spec = require("helpview.spec");
-local utils = require("helpview.utils");
+local health = require("helpview.health");
 
-require("helpview.highlights").setup();
-
-vim.api.nvim_create_autocmd({ "BufAdd", "BufEnter" }, {
-	group = helpview.au,
-	callback = function (event)
-		local buffer = event.buf;
-		local ft, bt = vim.bo[buffer].ft, vim.bo[buffer].bt;
-
-		if ft == "help" then
-			helpview.actions.attach(buffer);
-		end
-	end
+health.notify("trace", {
+	level = 1,
+	message = "Start"
 });
 
+--- Initiate the highlight groups.
+require("helpview.highlights").setup();
+
+health.notify("trace", {
+	level = 5,
+	message = "Created highlight groups"
+});
+
+--- Update highlight groups on colorscheme changes.
 vim.api.nvim_create_autocmd({ "ColorScheme" }, {
 	group = helpview.au,
 	callback = function ()
@@ -23,31 +32,133 @@ vim.api.nvim_create_autocmd({ "ColorScheme" }, {
 	end
 });
 
-vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+--- Register new buffers.
+vim.api.nvim_create_autocmd({ "BufAdd", "BufEnter" }, {
 	group = helpview.au,
 	callback = function (event)
+		---+
+
 		local buffer = event.buf;
 
-		if helpview.actions.__is_enabled(buffer) == false then
+		if helpview.state.enable == false then
+			--- New buffers shouldn't be registered.
+			return;
+		elseif helpview.actions.__is_attached(buffer) == true then
+			--- Already attached to this buffer!
 			return;
 		end
 
-		local prev_modes = spec.get({ "preview", "modes" }, { fallback = {}, ignore_enable = true });
+		---@type string, string
+		local bt, ft = vim.bo[buffer].buftype, vim.bo[buffer].filetype;
+		local attach_ft = spec.get({ "preview", "filetypes" }, { fallback = {}, ignore_enable = true });
+		local ignore_bt = spec.get({ "preview", "ignore_buftypes" }, { fallback = {}, ignore_enable = true });
+
+		local condition = spec.get({ "preview", "condition" }, { eval_args = { buffer } });
+
+		if vim.list_contains(ignore_bt, bt) == true then
+			--- Ignored buffer type.
+			return;
+		elseif vim.list_contains(attach_ft, ft) == false then
+			--- Ignored file type.
+			return;
+		elseif condition == false then
+			return;
+		end
+
+		helpview.actions.attach(buffer);
+
+		---_
+	end
+});
+
+vim.api.nvim_create_autocmd({ "ModeChanged" }, {
+	group = helpview.au,
+	callback = function (event)
+		---+
+
+		local buffer = event.buf;
 		local mode = vim.api.nvim_get_mode().mode;
 
-		if vim.list_contains(prev_modes, mode) then
-			if vim.list_contains(prev_modes, vim.v.event.old_mode) then
-				return;
-			end
+		---@type string[] List of modes where preview is shown.
+		local preview_modes = spec.get({ "preview", "modes" }, { fallback = {}, ignore_enable = true });
+		---@type string[] List of modes where preview is shown.
+		local hybrid_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
 
-			helpview.render(buffer);
-		else
-			if not vim.list_contains(prev_modes, vim.v.event.old_mode) then
-				return;
-			end
+		local old_mode = vim.v.event.old_mode;
 
+		if helpview.actions.__is_attached(buffer) == false then
+			--- Buffer isn't attached!
+			return;
+		elseif helpview.actions.__is_enabled(buffer) == false then
+			--- Markview disabled on this buffer.
 			helpview.clear(buffer);
+			return;
+		elseif buffer == helpview.state.splitview_source then
+			--- Splitview should only update from
+			--- cursor movements or content changes.
+			return;
 		end
+
+		if vim.list_contains(hybrid_modes, mode) then
+			health.notify("trace", {
+				level = 1,
+				message = string.format("Mode(%s): %d", mode, buffer);
+			});
+			health.__child_indent_in();
+
+			if vim.list_contains(hybrid_modes, old_mode) then
+				--- Switching between 2 hybrid modes.
+				goto callback;
+			else
+				vim.defer_fn(function ()
+					helpview.render(buffer);
+				end, 0);
+			end
+		elseif vim.list_contains(preview_modes, mode) then
+			health.notify("trace", {
+				level = 1,
+				message = string.format("Mode(%s): %d", mode, buffer);
+			});
+			health.__child_indent_in();
+
+			--- Preview
+			if vim.list_contains(hybrid_modes, old_mode) then
+				vim.defer_fn(function ()
+					helpview.render(buffer);
+				end, 0);
+			elseif vim.list_contains(preview_modes, old_mode) then
+				--- Previous mode was a preview
+				--- mode.
+				--- Most likely the text hasn't
+				--- changed.
+				goto callback;
+			else
+				helpview.render(buffer);
+			end
+		else
+			health.notify("trace", {
+				level = 2,
+				message = string.format("Mode(%s): %d", mode, buffer);
+			});
+			health.__child_indent_in();
+
+			--- Clear
+			if vim.list_contains(preview_modes, old_mode) == false then
+				--- Previous mode was not a preview
+				--- mode.
+				--- Most likely a preview shouldn't
+				--- have occurred.
+				goto callback;
+			else
+				helpview.clear(buffer);
+			end
+		end
+
+		::callback::
+		helpview.actions.__exec_callback("on_mode_change", buffer, vim.fn.win_findbuf(buffer), mode)
+		health.__child_indent_de();
+
+		---_
 	end
 });
 

@@ -1,4 +1,5 @@
 local helpview = {};
+local health = require("helpview.health");
 local spec = require("helpview.spec");
 
 helpview.state = {
@@ -12,11 +13,21 @@ helpview.state = {
 	splitview_window = nil
 }
 
+--- A stricter version of the default
+--- renderer.
 helpview.strict_render = {
 	---+${lua}
 
+	--- Buffers that have been rendered.
+	---@type integer[]
 	on = {},
 
+	--- Renders to {buffer}.
+	--- Disables rendering when the line count
+	--- is >= {max_lines}
+	---@param self table
+	---@param buffer integer
+	---@param max_lines integer
 	render = function (self, buffer, max_lines)
 		buffer = buffer or vim.api.nvim_get_current_buf();
 		max_lines = max_lines or spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
@@ -40,6 +51,10 @@ helpview.strict_render = {
 		table.insert(self.on, buffer)
 	end,
 
+	--- Clears the preview of {buffer}.
+	--- Also frees it yp to be rendered again.
+	---@param self table
+	---@param buffer integer
 	clear = function (self, buffer)
 		if vim.list_contains(self.on, buffer) == false then
 			return;
@@ -59,6 +74,7 @@ helpview.strict_render = {
 	---_
 };
 
+--- Cleans up any invalid buffers.
 helpview.clean = function ()
 	---+${lua}
 
@@ -91,6 +107,9 @@ helpview.clean = function ()
 	---_
 end
 
+--- Checks if {buffer} is safe.
+---@param buffer integer?
+---@return boolean
 helpview.buf_is_safe = function (buffer)
 	if type(buffer) ~= "number" then
 		return false;
@@ -103,6 +122,9 @@ helpview.buf_is_safe = function (buffer)
 	return true;
 end
 
+--- Checks if {window} is safe.
+---@param window integer?
+---@return boolean
 helpview.win_is_safe = function (window)
 	if type(window) ~= "number" then
 		return false;
@@ -115,6 +137,9 @@ helpview.win_is_safe = function (window)
 	return true;
 end
 
+--- Can we attach to {buffer}?
+---@param buffer integer?
+---@return boolean
 helpview.can_attach = function (buffer)
 	helpview.clean();
 
@@ -127,6 +152,9 @@ helpview.can_attach = function (buffer)
 	return true;
 end
 
+--- Can we draw on {buffer}?
+---@param buffer integer
+---@return boolean
 helpview.can_draw = function (buffer)
 	helpview.clean();
 
@@ -139,11 +167,16 @@ helpview.can_draw = function (buffer)
 	return true;
 end
 
+--- Clears all previews from {buffer}.
+---@param buffer integer
 helpview.clear = function (buffer)
 	buffer = buffer or vim.api.nvim_get_current_buf();
 	require("helpview.renderer").clear(buffer, 0, -1);
 end
 
+--- Renders preview to {buffer}.
+---@param buffer integer
+---@param state? { enable: boolean, hybrid_mode: boolean }
 helpview.render = function (buffer, state)
 	---+${lua}
 
@@ -156,7 +189,6 @@ helpview.render = function (buffer, state)
 	local draw_range = spec.get({ "preview", "draw_range" }, { fallback = { vim.o.lines, vim.o.lines }, ignore_enable = true });
 	local edit_range = spec.get({ "preview", "edit_range" }, { fallback = { 1, 0 }, ignore_enable = true });
 
-	local modes = spec.get({ "preview", "modes" }, { fallback = {}, ignore_enable = true });
 	local hybrid_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
 	local linewise = spec.get({ "preview", "linewise_hybrid_mode" }, { fallback = false, ignore_enable = true });
 
@@ -292,6 +324,7 @@ helpview.update_splitview_cursor = function ()
 	---_
 end
 
+--- Renders splitview.
 helpview.splitview_render = function ()
 	---+${lua}
 
@@ -345,13 +378,14 @@ helpview.splitview_render = function ()
 	---_
 end
 
+--- Actions for helpview.
 helpview.actions = {
 	["__exec_callback"] = function (callback, ...)
 		if vim.list_contains({ "string", "integer" }, type(callback)) == false then
 			return;
 		end
 
-		---@type function | nil
+		---@type function
 		local _f = spec.get({ "preview", "callbacks", callback }, { ignore_enable = true });
 		pcall(_f, ...);
 	end,
@@ -370,7 +404,136 @@ helpview.actions = {
 		end
 	end,
 
+	["__splitview_setup"] = function ()
+		--+${lua}
 
+		if helpview.buf_is_safe(helpview.state.splitview_source) == false then
+			return;
+		end
+
+		local utils = require("helpview.utils");
+		local win = utils.buf_getwin(helpview.state.splitview_source);
+
+		if helpview.win_is_safe(win) == false then
+			helpview.actions.splitClose();
+			return;
+		end
+
+		if helpview.buf_is_safe(helpview.state.splitview_buffer) == false then
+			pcall(vim.api.nvim_buf_delete, helpview.state.splitview_buffer, { force = true });
+			helpview.state.splitview_buffer = vim.api.nvim_create_buf(false, true);
+		end
+
+		vim.bo[helpview.state.splitview_buffer].ft = vim.bo[helpview.state.splitview_source].ft;
+
+		if helpview.win_is_safe(helpview.state.splitview_window) == false then
+			pcall(vim.api.nvim_win_close, helpview.state.splitview_window, true);
+			helpview.state.splitview_window = vim.api.nvim_open_win(
+				helpview.state.splitview_buffer,
+				false,
+				spec.get({ "preview", "splitview_winopts", }, {
+					fallback = { split = "right" },
+					ignore_enable = true
+				})
+			);
+		end
+
+		vim.wo[helpview.state.splitview_window].wrap = vim.wo[win].wrap;
+		vim.wo[helpview.state.splitview_window].linebreak = vim.wo[win].linebreak;
+
+		---_
+	end,
+
+	["traceExport"] = function ()
+		---+${lua}
+
+		local scrolloff = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1].textoff;
+		local buf_width = vim.o.columns - scrolloff;
+
+		local version = vim.version();
+		local colorscheme = vim.g.colors_name or "";
+
+		local time_col = math.max(20, math.floor((buf_width - 7) * 0.2));
+		local desc_col = buf_width - (time_col + 3);
+
+		local function center (text, width)
+			if vim.fn.strdisplaywidth(text) > width then
+				return vim.fn.strcharpart(text, width);
+			else
+				local pad_amount = width - vim.fn.strdisplaywidth(text);
+				return string.rep(" ", math.ceil(pad_amount / 2)) .. text .. string.rep(" ", math.floor(pad_amount / 2));
+			end
+		end
+
+		local lines = {
+			"Plugin: helpview.nvim",
+			"Time: " .. os.date(),
+			string.format("Nvim version: %d.%d.%d", version.major, version.minor, version.patch),
+			"Colorscheme: " .. colorscheme,
+			"",
+			"Level description,",
+			"  1 = START",
+			"  2 = PAUSE",
+			"  3 = STOP",
+			"  4 = ERROR",
+			"  5 = LOG",
+			"  6 = ENABLE",
+			"  7 = DISABLE",
+			"  8 = ATTACH",
+			"  9 = DETACH",
+			"",
+			"Trace,",
+			string.rep("-", time_col) .. "•-------•" .. string.rep("-", desc_col),
+			center("Time-stamp", time_col) .. "|" .. " Level " .. "|" .. center("Action", desc_col),
+			string.rep("-", time_col) .. "•-------•" .. string.rep("-", desc_col)
+		};
+
+		for _, entry in ipairs(health.log) do
+			if entry.kind ~= "trace" then
+				goto continue;
+			end
+
+			---@cast entry logs.trace
+
+			table.insert(lines, string.format(
+				"%s|%s| %s",
+				center(
+					string.format("%-12s", string.rep("  ", entry.indent) .. entry.timestamp),
+					time_col
+				),
+				center(tostring(entry.level or 0), 7),
+				entry.message
+			));
+
+		    ::continue::
+		end
+
+		table.insert(lines, string.rep("-", time_col) .. "•-------•" .. string.rep("-", desc_col))
+		table.insert(lines, "");
+		table.insert(lines, "vim:nomodifiable:nowrap:nospell:");
+
+		local trace_file = io.open("trace.txt", "w");
+
+		if not trace_file then
+			return;
+		end
+
+		trace_file:write(table.concat(lines, "\n"));
+		trace_file:close();
+
+		---_
+	end,
+	["traceShow"] = function (from, to)
+		health.trace_open(from, to);
+	end,
+
+
+	--- Attaches previewer to a {buffer}.
+	---
+	--- Optionally allows setting a {state} for
+	--- that buffer.
+	---@param buffer integer?
+	---@param state? { enable: boolean, hybrid_mode: boolean, y: integer }
 	["attach"] = function (buffer, state)
 		---+${lua}
 
@@ -410,7 +573,8 @@ helpview.actions = {
 
 		---_
 	end,
-	--- Detaches previewer from a buffer.
+
+	--- Detaches previewer from a {buffer}.
 	---@param buffer integer?
 	["detach"] = function (buffer)
 		---+${lua}
@@ -450,6 +614,8 @@ helpview.actions = {
 		---_
 	end,
 
+	--- Disables preview of {buffer}.
+	---@param buffer integer?
 	["disable"] = function (buffer)
 		---+${lua}
 		---@type integer
@@ -493,6 +659,9 @@ helpview.actions = {
 		-- health.__child_indent_de();
 		---_
 	end,
+
+	--- Enables preview of {buffer}.
+	---@param buffer integer?
 	["enable"] = function (buffer)
 		---+${lua}
 		---@type integer
@@ -545,6 +714,8 @@ helpview.actions = {
 		---_
 	end,
 
+	--- Enables hybrid mode of {buffer}.
+	---@param buffer integer?
 	["hybridEnable"] = function (buffer)
 		---+${lua}
 
@@ -578,6 +749,8 @@ helpview.actions = {
 		---_
 	end,
 
+	--- Disables hybrid mode of {buffer}.
+	---@param buffer integer?
 	["hybridDisable"] = function (buffer)
 		--+${lua}
 
@@ -611,6 +784,8 @@ helpview.actions = {
 		---_
 	end,
 
+	--- Opens split view for {buffer}.
+	---@param buffer integer?
 	["splitOpen"] = function (buffer)
 		--++${lua}
 
@@ -636,6 +811,8 @@ helpview.actions = {
 		helpview.splitview_render();
 		---_
 	end,
+
+	--- Closes split view.
 	["splitClose"] = function ()
 		---+${lua}
 		if type(helpview.state.splitview_source) ~= "number" then
@@ -890,9 +1067,9 @@ helpview.commands = {
 		helpview.state.enable = false;
 	end,
 
-	["open"] = function ()
-		require("helpview.links").open();
-	end
+	-- ["open"] = function ()
+	-- 	require("helpview.links").open();
+	-- end
 	---_
 };
 
