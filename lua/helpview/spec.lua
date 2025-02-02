@@ -1,4 +1,5 @@
 local spec = {};
+local health = require("helpview.health");
 
 spec.default = {
 	---+${lua}
@@ -208,17 +209,257 @@ spec.default = {
 
 spec.config = vim.deepcopy(spec.default);
 
-spec.setup = function (config)
-	if type(config) == "table" then
-		spec.config = vim.tbl_deep_extend("force", spec.config, config);
+spec.fixup = {
+	---+
+
+	["modes"] = function (value)
+		---+
+
+		health.notify("deprecation", {
+			option = "modes",
+			alter = "preview → modes"
+		});
+
+		return {
+			preview = {
+				modes = value
+			}
+		};
+
+		---_
+	end,
+
+	["hybrid_modes"] = function (value)
+		---+
+
+		health.notify("deprecation", {
+			option = "hybrid_modes",
+			alter = "preview → hybrid_modes"
+		});
+
+		return {
+			preview = {
+				hybrid_modes = value
+			}
+		};
+
+		---_
+	end,
+
+	["buf_ignore"] = function (value)
+		---+
+
+		health.notify("deprecation", {
+			option = "buf_ignore",
+			alter = "preview → ignore_buftypes"
+		});
+
+		return {
+			preview = {
+				ignore_buftypes = value
+			}
+		};
+
+		---_
+	end,
+
+	["callbacks"] = function (value)
+		---+
+
+		health.notify("deprecation", {
+			option = "callbacks",
+			alter = "preview → callbacks"
+		});
+
+		return {
+			preview = {
+				callbacks = value
+			}
+		};
+
+		---_
+	end,
+
+	["arguments"] = function (config)
+		---+
+
+		local _o = {
+			default = {}
+		};
+
+		for k, v in pairs(config) do
+			if k == "conceal_before" then
+				health.notify("deprecation", {
+					option = "arguments → conceal_before"
+				});
+			elseif k == "conceal_after" then
+				health.notify("deprecation", {
+					option = "arguments → conceal_after"
+				});
+			else
+				health.notify("deprecation", {
+					option = "arguments → " .. k,
+					alter = "vimdoc → arguments → default → " .. k
+				});
+
+				_o.default[k] = v;
+			end
+		end
+
+		return {
+			vimdoc = {
+				arguments = _o
+			}
+		};
+
+		---_
+	end,
+
+	["keycodes"] = function (config)
+		---+
+
+		local _o = {
+			default = {}
+		};
+
+		for k, v in pairs(config) do
+			if k == "conceal_before" then
+				health.notify("deprecation", {
+					option = "keycodes → conceal_before"
+				});
+			elseif k == "conceal_after" then
+				health.notify("deprecation", {
+					option = "keycodes → conceal_after"
+				});
+			else
+				health.notify("deprecation", {
+					option = "keycodes → " .. k,
+					alter = "vimdoc → keycodes → default → " .. k
+				});
+
+				_o.default[k] = v;
+			end
+		end
+
+		return {
+			vimdoc = {
+				keycodes = _o
+			}
+		};
+
+		---_
+	end,
+
+	["mention_links"] = function (config)
+		---+
+
+		local _o = {
+			default = {}
+		};
+
+		for k, v in pairs(config) do
+			if k == "conceal_before" then
+				health.notify("deprecation", {
+					option = "mention_links → conceal_before"
+				});
+			elseif k == "conceal_after" then
+				health.notify("deprecation", {
+					option = "mention_links → conceal_after"
+				});
+			else
+				health.notify("deprecation", {
+					option = "mention_links → " .. k,
+					alter = "vimdoc → mention_links → default → " .. k
+				});
+
+				_o.default[k] = v;
+			end
+		end
+
+		return {
+			vimdoc = {
+				keycodes = _o
+			}
+		};
+
+		---_
+	end,
+
+	["modelines"] = function (config)
+		---+
+
+		for k, _ in pairs(config) do
+			health.notify("deprecation", {
+				option = "modelines → " .. k,
+				tip = {
+					{ "See ", "Comment" },
+					{ " :h helpview.nvim-vimdoc.modelines ", "DiagnosticVirtualTextHint" },
+					{ " for the valid options.", "Comment" },
+				}
+			});
+		end
+
+		return {};
+
+		---_
 	end
+
+	---_
+};
+
+--- Tries to fix deprecated config spec
+---@param config table?
+---@return table
+spec.fix_config = function (config)
+	---+${lua}
+
+	if type(config) ~= "table" then
+		return {};
+	end
+
+	--- Table containing valid options.
+	local main = {
+		renderers = config.renderers,
+		highlight_groups = config.highlight_groups,
+
+		preview = config.preview,
+		vimdoc = config.vimdoc,
+	};
+
+	--- Table containing the fixed version of
+	--- deprecated options.
+	local fixed = {};
+
+	for k, v in pairs(config) do
+		if spec.fixup[k] then
+			local _f, _r = pcall(spec.fixup[k], v);
+
+			if _f == true then
+				fixed = vim.tbl_deep_extend("force", fixed, _r);
+			end
+		end
+	end
+
+	if vim.tbl_isempty(fixed) == false then
+		health.fixed_config = fixed;
+	end
+
+	return vim.tbl_deep_extend("force", main, fixed);
+	---_
+end
+
+spec.setup = function (config)
+	config = spec.fix_config(config);
+	spec.config = vim.tbl_deep_extend("force", spec.config, config);
 end
 
 --- Gets configuration option.
 ---@param keys string[]
----@param opts { fallback: any, source: table?, ignore_enable : boolean }
+---@param opts? { fallback: any, source: table?, ignore_enable : boolean }
 ---@return any
 spec.get = function (keys, opts)
+	---+
+
 	keys = keys or {};
 	opts = opts or {};
 
@@ -249,6 +490,8 @@ spec.get = function (keys, opts)
 	else
 		return val or opts.fallback;
 	end
+
+	---_
 end
 
 return spec;
