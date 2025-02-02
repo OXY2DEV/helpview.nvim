@@ -1,756 +1,903 @@
 local helpview = {};
-helpview.parser = require("helpview.parser");
-helpview.renderer = require("helpview.renderer");
-
-helpview.colors = require("helpview.colors");
-helpview.utils = require("helpview.utils");
-
--- _, helpview.column = pcall(require, "helpview.extras.column");
-
-helpview.add_hls = function (obj)
-	local use_hl = {};
-
-	for _, hl in ipairs(obj) do
-		if hl.output and type(hl.output) == "function" and pcall(hl.output) then
-			use_hl = vim.list_extend(use_hl, hl.output());
-		else
-			table.insert(use_hl, hl);
-		end
-	end
-
-	for _, hl in ipairs(use_hl) do
-		if not hl.value then
-			goto continue;
-		end
-
-		local opt = hl.value;
-
-		if type(hl.value) == "function" and pcall(hl.value) then
-			opt = hl.value();
-		end
-
-		if type(opt) == "table" then
-			vim.api.nvim_set_hl(0, hl.raw and hl.group_name or "Helpview" .. hl.group_name, opt);
-		end
-
-		::continue::
-	end
-end
-
-helpview.get_buffer_info = function (buffer)
-	local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win());
-
-	return {
-		width = vim.bo[buffer].textwidth,
-		win_width = vim.api.nvim_win_get_width(0) - wininfo[1].textoff,
-		shift_width = vim.bo[buffer].tabstop
-	};
-end
-
-helpview.attached_buffers = {};
+local spec = require("helpview.spec");
 
 helpview.state = {
 	enable = true,
-	buf_states = {}
-};
+	attached_buffers = {},
 
-helpview.configuration = {
-	modes = { "n", "c" },
-	hybrid_modes = nil,
-	-- buf_ignore = { "help" },
+	buffer_states = {},
 
-	callbacks = {
-		on_enable = nil,
-		on_disable = nil,
+	splitview_source = nil,
+	splitview_buffer = nil,
+	splitview_window = nil
+}
 
-		on_mode_change = nil
-	},
+helpview.strict_render = {
+	---+${lua}
 
-	---+ ##code##
-	highlight_groups = {
-		{
-			group_name = "Title",
-			value = function ()
-				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "bg") and
-					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "fg")
-				then
-					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "bg");
-					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextWarn", "fg");
+	on = {},
 
-					return { bg = bg, fg = fg, default = true };
-				else
-					local bg = helpview.colors.bg() or "#1e1e2e";
-					local fg = helpview.colors.get({
-						helpview.colors.get_hl_value(0, "DiagnosticWarn", "fg"),
-						vim.o.background == "dark" and "#f9e2af" or "#df8e18"
-					});
+	render = function (self, buffer, max_lines)
+		buffer = buffer or vim.api.nvim_get_current_buf();
+		max_lines = max_lines or spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
 
-					return {
-						bg = vim.o.background == "dark" and
-							helpview.colors.mix(bg, fg, 0.5, 0.15) or
-							helpview.colors.mix(bg, fg, 0.85, 0.20),
-						fg = fg,
+		if vim.list_contains(self.on, buffer) then
+			return;
+		elseif vim.api.nvim_buf_line_count(buffer) >= max_lines then
+			return;
+		end
 
-						default = true
-					}
-				end
+		local parser = require("helpview.parser");
+		local renderer = require("helpview.renderer");
+
+		helpview.clear(buffer);
+		local content = parser.parse(buffer, 0, -1);
+
+		helpview.actions.__exec_callback("on_attach", buffer, vim.fn.win_findbuf(buffer));
+		helpview.actions.__exec_callback("on_enable", buffer, vim.fn.win_findbuf(buffer));
+
+		renderer.render(buffer, content);
+		table.insert(self.on, buffer)
+	end,
+
+	clear = function (self, buffer)
+		if vim.list_contains(self.on, buffer) == false then
+			return;
+		end
+
+		helpview.actions.__exec_callback("on_disable", buffer, vim.fn.win_findbuf(buffer));
+		helpview.actions.__exec_callback("on_detach", buffer, vim.fn.win_findbuf(buffer));
+
+		for b, buf in ipairs(self.on) do
+			if buf == buffer then
+				table.remove(self.on, b);
+				return;
 			end
-		},
-		{
-			group_name = "Heading1",
-			value = function ()
-				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "bg") and
-					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "fg")
-				then
-					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "bg");
-					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextOk", "fg");
+		end
+	end
 
-					return { bg = bg, fg = fg, default = true };
-				else
-					local bg = helpview.colors.bg() or "#1e1e2e";
-					local fg = helpview.colors.get({
-						helpview.colors.get_hl_value(0, "DiagnosticOk", "fg"),
-						vim.o.background == "dark" and "#a6e3a1" or "#40a02b"
-					});
-
-					return {
-						bg = vim.o.background == "dark" and
-							helpview.colors.mix(bg, fg, 0.5, 0.15) or
-							helpview.colors.mix(bg, fg, 0.85, 0.20),
-						fg = fg,
-
-						default = true
-					}
-				end
-			end
-		},
-		{
-			group_name = "Heading2",
-			value = function ()
-				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "bg") and
-					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "fg")
-				then
-					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "bg");
-					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextHint", "fg");
-
-					return { bg = bg, fg = fg, default = true };
-				else
-					local bg = helpview.colors.bg() or "#1e1e2e";
-					local fg = helpview.colors.get({
-						helpview.colors.get_hl_value(0, "DiagnosticHint", "fg"),
-						vim.o.background == "dark" and "#94e2d5" or "#179299"
-					});
-
-					return {
-						bg = vim.o.background == "dark" and
-							helpview.colors.mix(bg, fg, 0.5, 0.15) or
-							helpview.colors.mix(bg, fg, 0.85, 0.20),
-						fg = fg,
-
-						default = true
-					}
-				end
-			end
-		},
-		{
-			group_name = "Heading3",
-			value = function ()
-				if helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "bg") and
-					helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "fg")
-				then
-					local bg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "bg");
-					local fg = helpview.colors.get_hl_value(0, "DiagnosticVirtualTextInfo", "fg");
-
-					return { bg = bg, fg = fg, default = true };
-				else
-					local bg = helpview.colors.bg() or "#1e1e2e";
-					local fg = helpview.colors.get({
-						helpview.colors.get_hl_value(0, "DiagnosticInfo", "fg"),
-						vim.o.background == "dark" and "#89dceb" or "#179299"
-					});
-
-					return {
-						bg = vim.o.background == "dark" and
-							helpview.colors.mix(bg, fg, 0.5, 0.15) or
-							helpview.colors.mix(bg, fg, 0.85, 0.20),
-						fg = fg,
-
-						default = true
-					}
-				end
-			end
-		},
-		{
-			group_name = "Heading4",
-			value = function ()
-				if helpview.colors.get_hl_value(0, "Special", "bg") and
-					helpview.colors.get_hl_value(0, "Special", "fg")
-				then
-					local bg = helpview.colors.get_hl_value(0, "Special", "bg");
-					local fg = helpview.colors.get_hl_value(0, "Special", "fg");
-
-					return { bg = bg, fg = fg, default = true };
-				else
-					local bg = helpview.colors.bg() or "#1e1e2e";
-					local fg = helpview.colors.get({
-						helpview.colors.get_hl_value(0, "Special", "fg"),
-						vim.o.background == "dark" and "#f5c2e7" or "#ea76cb"
-					});
-
-					return {
-						bg = vim.o.background == "dark" and
-							helpview.colors.mix(bg, fg, 0.5, 0.15) or
-							helpview.colors.mix(bg, fg, 0.85, 0.20),
-						fg = fg,
-
-						default = true
-					}
-				end
-			end
-		},
-
-		{
-			output = function ()
-				local bg = helpview.colors.bg();
-				local fg = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "Comment", "fg"),
-					vim.o.background == "dark" and "#6c7086" or "#9ca0b0"
-				});
-
-				local luminosity = helpview.colors.get_brightness(bg);
-
-				if luminosity < 0.5 then
-					return {
-						{
-							group_name = "Code",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)),
-
-								default = true
-							}
-						},
-						{
-							group_name = "CodeLanguage",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.25)),
-								fg = fg,
-
-								default = true
-							}
-						}
-					};
-				else
-					return {
-						{
-							group_name = "Code",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1),
-
-								default = true
-							}
-						},
-						{
-							group_name = "CodeLanguage",
-							value = {
-								bg = helpview.colors.mix(bg, bg, 1, math.min(1 - luminosity, 0.05) * -1),
-								fg = fg,
-
-								default = true
-							}
-						}
-					};
-				end
-			end
-		},
-		{
-			group_name = "InlineCode",
-			value = function ()
-				local bg = helpview.colors.bg();
-				local fg = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "@markup.raw.vimdoc", "fg"),
-					vim.o.background == "dark" and "#6c7086" or "#9ca0b0"
-				});
-
-				local luminosity = helpview.colors.get_brightness(bg);
-
-				if luminosity < 0.5 then
-					return {
-						bg = helpview.colors.mix(bg, bg, 1, math.max(luminosity, 0.5)),
-						fg = fg,
-
-						default = true
-					};
-				else
-					return {
-						bg = helpview.colors.mix(bg, bg, 1, math.min(luminosity, 0.15) * -1),
-						fg = fg,
-
-						default = true
-					};
-				end
-			end
-		},
-		{
-			output = function ()
-				local bg = helpview.colors.bg();
-				local tag_fg = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "Title", "fg"),
-					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
-				});
-				local taglink_fg = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "Title", "fg"),
-					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
-				});
-				local option_fg = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "Tag", "fg"),
-					vim.o.background == "dark" and "#b4befe" or "#7287fd"
-				});
-
-				if vim.o.background == "dark" then
-					return {
-						{
-							group_name = "Taglink",
-							value = {
-								bg = helpview.colors.mix(tag_fg, bg, 0.25, 0.15),
-								fg = tag_fg,
-
-								default = true
-							}
-						},
-						{
-							group_name = "Optionlink",
-							value = {
-								bg = helpview.colors.mix(option_fg, bg, 0.25, 0.15),
-								fg = option_fg,
-
-								default = true
-							}
-						},
-						{
-							group_name = "Mentionlink",
-							value = {
-								fg = taglink_fg,
-								underline = true,
-
-								default = true
-							}
-						},
-					}
-				else
-					return {
-						{
-							group_name = "Taglink",
-							value = {
-								bg = helpview.colors.mix(tag_fg, bg, 0.5, 0.65),
-								fg = tag_fg,
-
-								default = true
-							}
-						},
-						{
-							group_name = "Optionlink",
-							value = {
-								bg = helpview.colors.mix(option_fg, bg, 0.5, 0.65),
-								fg = option_fg,
-
-								default = true
-							}
-						},
-						{
-							group_name = "Mentionlink",
-							value = {
-								fg = taglink_fg,
-								underline = true,
-
-								default = true
-							}
-						},
-					}
-				end
-			end
-		},
-		{
-			output = function ()
-				local from = helpview.colors.bg();
-				local to = helpview.colors.get({
-					helpview.colors.get_hl_value(0, "@character", "fg"),
-					helpview.colors.get_hl_value(0, "@comment.note", "fg"),
-					vim.o.background == "dark" and "#89b4fa" or "#1e66f5"
-				});
-
-				return helpview.colors.create_gradient("Gradient", from, to, 10, "fg", { default = true })
-			end
-		}
-	},
 	---_
-
-	arguments = {
-		icon = "󰂓 ",
-		hl = "@variable.parameter.vimdoc",
-
-		conceal_before = 1, conceal_after = 1
-	},
-
-	code_blocks = {
-		hl = "HelpviewCode",
-		language_hl = "HelpviewCodeLanguage"
-	},
-
-	group_names = {
-		enable = true,
-
-		icon = "󰏘 ",
-	},
-
-	headings = {
-		heading_1 = {
-			style = "simple",
-			hl = "Heading1",
-			marker = "═",
-
-			sign = " "
-		},
-		heading_2 = {
-			style = "simple",
-			hl = "Heading2",
-			marker = "─",
-
-			sign = " "
-		},
-		heading_3 = {
-			style = "simple",
-			hl = "Heading3",
-
-			sign = " "
-		},
-		heading_4 = {
-			style = "simple",
-			hl = "Heading4",
-
-			sign = "󰓫 "
-		},
-	},
-
-	horizontal_rules = {
-		parts = {
-			{
-				type = "repeating",
-				repeat_amount = function (buf_info)
-					return math.floor((buf_info.width - 3) / 2);
-				end,
-
-				direction = "left",
-				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
-			},
-			{
-				type = "text",
-				text = "  ",
-
-				hl = "HelpviewGradient10"
-			},
-			{ -- Nerd font characters have 1.5x the width of
-			  -- normal text. So we add this half character
-				type = "text",
-				text = "╶",
-
-				hl = "HelpviewGradient6"
-			},
-			{
-				type = "repeating",
-				repeat_amount = function (buf_info)
-					return math.floor((buf_info.width - 3) / 2) - 1;
-				end,
-
-				direction = "right",
-				hl = { "HelpviewGradient1", "HelpviewGradient2", "HelpviewGradient3", "HelpviewGradient4", "HelpviewGradient5", "HelpviewGradient6" }
-			},
-		}
-	},
-
-	inline_codes = {
-		padding_left = " ",
-		padding_right = " ",
-
-		hl = "HelpviewInlineCode"
-	},
-
-	keycodes = {
-		icon = "󰌌 ",
-		hl = "Special",
-
-		conceal_before = function (data)
-			if data.extracted then
-				return 1;
-			else
-				return 0;
-			end
-		end,
-		conceal_after = function (data)
-			if data.extracted then
-				return 1;
-			else
-				return 0;
-			end
-		end,
-	},
-
-	mention_links = {
-		icon = " ",
-		hl = "HelpviewMentionlink"
-	},
-
-	modelines = {
-		style = "expanded",
-
-		icon_hl = "DiagnosticOk",
-		selector_hl = "@property.class.css",
-		surround_hl = "@punctuation.bracket",
-
-		option_hl = "@property.css",
-	},
-
-	notes = {
-		default = {
-			padding_right = " ",
-			icon = "   ", hl = "@comment.note"
-		},
-
-		warning = {
-			padding_right = " ",
-			icon = "   ", hl = "@comment.warning"
-		},
-
-		deprecated = {
-			padding_right = " ",
-			icon = "  ", hl = "@comment.error"
-		}
-	},
-
-	option_links = {
-		padding_left = " ",
-		padding_right = " ",
-
-		icon = " ",
-		hl = "HelpviewOptionLink",
-
-		conceal_before = 1, conceal_after = 1
-	},
-
-	tag_links = {
-		padding_left = " ",
-		padding_right = " ",
-
-		hl = "HelpviewTaglink"
-	},
-
-	title = {
-		style = "simple",
-		hl = "HelpviewTitle",
-	}
 };
 
-helpview.commands = {
-	toggleAll = function ()
-		if helpview.state.enable == true then
-			helpview.commands.disableAll();
-		else
-			helpview.commands.enableAll();
-		end
-	end,
-	enableAll = function ()
-		helpview.state.enable = true;
+helpview.clean = function ()
+	---+${lua}
 
-		for _, buf in ipairs(helpview.attached_buffers) do
-			local parsed_content = helpview.parser.init(buf);
-			local windows = helpview.get_attached_wins(buf);
-			local buf_info = helpview.get_buffer_info(buf);
-
-			if helpview.configuration.options and helpview.configuration.options.on_enable then
-				for _, window in ipairs(windows) do
-					if helpview.configuration and helpview.configuration.on_enable and pcall(helpview.configuration.options.on_enable, window, buf) then
-						helpview.configuration.on_enable(window, buf);
-					end
-				end
-			end
-
-
-			helpview.renderer.clear(buf);
-			helpview.renderer.render(buf, parsed_content, helpview.configuration, buf_info)
-		end
-	end,
-	disableAll = function ()
-		helpview.state.enable = false;
-
-		for _, buf in ipairs(helpview.attached_buffers) do
-			local windows = helpview.get_attached_wins(buf);
-
-			if helpview.configuration.options and helpview.configuration.options.on_disable then
-				for _, window in ipairs(windows) do
-					if helpview.configuration and helpview.configuration.on_disable and pcall(helpview.configuration.options.on_disable, window, buf) then
-						helpview.configuration.on_disable(window, buf);
-					end
-				end
-			end
-
-			helpview.renderer.clear(buf);
-		end
-	end,
-
-	toggle = function (buffer)
-		if not tonumber(buffer) or not vim.api.nvim_buf_is_valid(tonumber(buffer)) then
-			return;
+	--- Should a buffer be cleaned?
+	---@param buffer integer?
+	---@return boolean
+	local function should_clean (buffer)
+		if type(buffer) ~= "number" then
+			return true;
+		elseif vim.api.nvim_buf_is_valid(buffer) == false then
+			return true;
+		elseif vim.api.nvim_buf_is_loaded(buffer) == false then
+			return true;
 		end
 
-		local state = helpview.state.buf_states[tonumber(buffer)];
-
-		if state == false then
-			helpview.commands.enable(buffer);
-		else
-			helpview.commands.disable(buffer);
-		end
-	end,
-	enable = function (buffer)
-		local buf = tonumber(buffer) or vim.api.nvim_get_current_buf();
-
-		if not vim.list_contains(helpview.attached_buffers, buf) or not vim.api.nvim_buf_is_valid(buf) then
-			return;
-		end
-
-		if helpview.configuration.options and helpview.configuration.options.on_enable then
-			local windows = helpview.get_attached_wins(buf);
-
-			-- Set some options
-			for _, window in ipairs(windows) do
-				if helpview.configuration and helpview.configuration.on_enable and pcall(helpview.configuration.options.on_enable, window, buffer) then
-					helpview.configuration.options.on_enable(window, buffer);
-				end
-			end
-		end
-
-		helpview.state.buf_states[buf] = true;
-
-		local parsed_content = helpview.parser.init(buf);
-		local buf_info = helpview.get_buffer_info(buf);
-
-		helpview.renderer.clear(buf);
-		helpview.renderer.render(buf, parsed_content, helpview.configuration, buf_info);
-	end,
-	disable = function (buffer)
-		local buf = tonumber(buffer) or vim.api.nvim_get_current_buf();
-
-		if not vim.list_contains(helpview.attached_buffers, buf) or not vim.api.nvim_buf_is_valid(buf) then
-			return;
-		end
-
-		if helpview.configuration.options and helpview.configuration.options.on_disable then
-			local windows = helpview.get_attached_wins(buf);
-
-			-- Set some options
-			for _, window in ipairs(windows) do
-				if helpview.configuration and helpview.configuration.on_disable and pcall(helpview.configuration.options.on_disable, window, buffer) then
-					helpview.configuration.on_disable(window, buffer);
-				end
-			end
-		end
-
-		helpview.state.buf_states[buf] = false;
-
-		helpview.renderer.clear(buf);
+		return false;
 	end
-};
 
-vim.api.nvim_create_user_command("Helpview", function (opts)
-	local fargs = opts.fargs;
+	for b, buf in ipairs(helpview.state.attached_buffers) do
+		if should_clean(buf) == true then
+			table.remove(helpview.state.attached_buffers, b);
+			helpview.state.buffer_states[buf] = nil;
 
-	if #fargs < 1 then
-		helpview.commands.toggleAll();
-	elseif #fargs == 1 and helpview.commands[fargs[1]] then
-		helpview.commands[fargs[1]]();
-	elseif #fargs == 2 and helpview.commands[fargs[1]] then
-		helpview.commands[fargs[1]](fargs[2]);
-	end
-end, {
-	nargs = "*",
-	desc = "Controls for Helpview.nvim",
-
-	complete = function (arg_lead, cmdline, _)
-		if arg_lead == "" then
-			if not cmdline:find("^Helpview%s+%S+") then
-				return vim.tbl_keys(helpview.commands);
-			elseif cmdline:find("^Helpview%s+(%S+)%s*$") then
-				for cmd, _ in cmdline:gmatch("Helpview%s*(%S+)%s*(%S*)") do
-					if vim.list_contains({ "toggle", "enable", "disable" }, cmd) then
-						local bufs = {};
-
-						for _, buf in ipairs(helpview.attached_buffers) do
-							table.insert(bufs, tostring(buf));
-						end
-
-						return bufs;
-					end
-				end
-			end
-		end
-
-		for cmd, arg in cmdline:gmatch("Helpview%s+(%S+)%s*(%S*)") do
-			if arg_lead == cmd then
-				local cmds = vim.tbl_keys(helpview.commands);
-				local comp = {};
-
-				for _, key in ipairs(cmds) do
-					if arg_lead == string.sub(key, 1, #arg_lead) then
-						table.insert(comp, key);
-					end
-				end
-
-				return comp;
-			elseif arg_lead == arg then
-				local buf_comp = {};
-
-				for _, buffer in ipairs(helpview.attached_buffers) do
-					if tostring(buffer):match(arg) then
-						table.insert(buf_comp, tostring(buf));
-					end
-				end
-
-				return buf_comp;
+			if helpview.state.splitview_source == buf then
+				vim.print('XClose splitview');
 			end
 		end
 	end
-})
 
--- vim.api.nvim_create_user_command("H", function (data)
--- 	vim.print("h");
--- end, {
--- 	desc = "Why?"
--- })
-
-vim.api.nvim_create_autocmd({ "colorscheme" }, {
-	callback = function ()
-		if vim.islist(helpview.configuration.highlight_groups) then
-			helpview.add_hls(helpview.configuration.highlight_groups)
-		end
-	end
-});
-
-helpview.get_attached_wins = function (buffer)
-	local attached_wins = {};
-
-	for _, window in ipairs(vim.api.nvim_list_wins()) do
-		if vim.api.nvim_win_get_buf(window) == buffer then
-			table.insert(attached_wins, window);
-		end
-	end
-
-	return attached_wins;
+	---_
 end
 
-helpview.setup = function (user_config)
-	helpview.configuration = vim.tbl_extend("keep", user_config or {}, helpview.configuration);
-
-	if vim.islist(helpview.configuration.highlight_groups) then
-		helpview.add_hls(helpview.configuration.highlight_groups);
+helpview.buf_is_safe = function (buffer)
+	if type(buffer) ~= "number" then
+		return false;
+	elseif vim.api.nvim_buf_is_valid(buffer) == false then
+		return false;
+	elseif vim.v.exiting ~= vim.NIL then
+		return false;
 	end
+
+	return true;
+end
+
+helpview.win_is_safe = function (window)
+	if type(window) ~= "number" then
+		return false;
+	elseif vim.api.nvim_win_is_valid(window) == false then
+		return false;
+	elseif vim.api.nvim_win_get_tabpage(window) ~= vim.api.nvim_get_current_tabpage() then
+		return false;
+	end
+
+	return true;
+end
+
+helpview.can_attach = function (buffer)
+	helpview.clean();
+
+	if helpview.buf_is_safe(buffer) == false then
+		return false;
+	elseif vim.list_contains(helpview.state.attached_buffers, buffer) then
+		return false;
+	end
+
+	return true;
+end
+
+helpview.can_draw = function (buffer)
+	helpview.clean();
+
+	if helpview.buf_is_safe(buffer) == false then
+		return false;
+	elseif helpview.actions.__is_enabled(buffer) == false then
+		return false;
+	end
+
+	return true;
+end
+
+helpview.clear = function (buffer)
+	buffer = buffer or vim.api.nvim_get_current_buf();
+	require("helpview.renderer").clear(buffer, 0, -1);
+end
+
+helpview.render = function (buffer, state)
+	---+${lua}
+
+	local parser = require("helpview.parser");
+	local renderer = require("helpview.renderer");
+
+	buffer = buffer or vim.api.nvim_get_current_buf();
+
+	local line_limit = spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
+	local draw_range = spec.get({ "preview", "draw_range" }, { fallback = { vim.o.lines, vim.o.lines }, ignore_enable = true });
+	local edit_range = spec.get({ "preview", "edit_range" }, { fallback = { 1, 0 }, ignore_enable = true });
+
+	local modes = spec.get({ "preview", "modes" }, { fallback = {}, ignore_enable = true });
+	local hybrid_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+	local linewise = spec.get({ "preview", "linewise_hybrid_mode" }, { fallback = false, ignore_enable = true });
+
+	local line_count = vim.api.nvim_buf_line_count(buffer);
+	local mode = vim.api.nvim_get_mode().mode;
+
+	state = state or helpview.state.buffer_states[buffer] or {};
+
+	local function is_hybrid_mode ()
+		if type(state) == "table" and state.hybrid_mode == false then
+			return false;
+		else
+			return vim.list_contains(hybrid_modes, mode);
+		end
+	end
+
+	local content;
+
+	helpview.clear(buffer);
+
+	if line_count >= line_limit then
+		if is_hybrid_mode() == true and linewise == false then
+			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+				local cursor = vim.api.nvim_win_get_cursor(win);
+				cursor[1] = cursor[1] - 1;
+
+				content, _ = parser.init(
+					buffer,
+					math.max(0, cursor[1] - draw_range[1]),
+					math.min(line_count, cursor[1] + draw_range[1])
+				);
+
+				content = renderer.filter(content, nil, {
+					math.max(0, cursor[1] - edit_range[1]),
+					math.min(line_count, cursor[1] + edit_range[1]),
+				});
+			end
+
+			renderer.render(buffer, content);
+		elseif is_hybrid_mode() == true then
+			renderer.render(buffer, content);
+
+			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+				local cursor = vim.api.nvim_win_get_cursor(win);
+				cursor[1] = cursor[1] - 1;
+
+				content, _ = parser.init(
+					buffer,
+					math.max(0, cursor[1] - draw_range[1]),
+					math.min(line_count, cursor[1] + draw_range[1])
+				);
+
+				renderer.clear(buffer,
+					math.max(0, cursor[1] - edit_range[1]),
+					math.min(line_count, cursor[1] + edit_range[1])
+				);
+			end
+		else
+			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+				local cursor = vim.api.nvim_win_get_cursor(win);
+				cursor[1] = cursor[1] - 1;
+
+				content, _ = parser.init(
+					buffer,
+					math.max(0, cursor[1] - draw_range[1]),
+					math.min(line_count, cursor[1] + draw_range[1])
+				);
+
+				renderer.render(buffer, content);
+			end
+		end
+	else
+		for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+			local cursor = vim.api.nvim_win_get_cursor(win);
+			cursor[1] = cursor[1] - 1;
+
+			content, _ = parser.init(
+				buffer,
+				0,
+				-1
+			);
+
+			if is_hybrid_mode() == true and linewise == false then
+				content = renderer.filter(content, nil, {
+					math.max(0, cursor[1] - edit_range[1]),
+					math.min(line_count, cursor[1] + edit_range[1]),
+				});
+
+				renderer.render(buffer, content);
+			elseif is_hybrid_mode() == true then
+				renderer.render(buffer, content);
+
+				renderer.clear(buffer,
+					math.max(0, cursor[1] - edit_range[1]),
+					math.min(line_count, cursor[1] + edit_range[1])
+				);
+			else
+				renderer.render(buffer, content);
+			end
+		end
+	end
+
+	---_
+end
+
+--- Updates cursor position in splitview.
+helpview.update_splitview_cursor = function ()
+	---+${lua}
+
+	local utils = require("helpview.utils");
+	local buffer = helpview.state.splitview_source;
+
+	if helpview.buf_is_safe(buffer) == false then
+		--- Buffer isn't safe.
+		-- helpview.state.splitview_source = nil;
+		pcall(helpview.actions.splitClose);
+		return;
+	elseif helpview.win_is_safe(utils.buf_getwin(buffer)) == false then
+		--- Buffer doesn't have any windows attached.
+		pcall(helpview.actions.splitClose);
+		return;
+	end
+
+	--- In case the preview buffer/window got
+	--- deleted, we should regenerate them.
+	helpview.actions.__splitview_setup();
+
+	local pre_win = helpview.state.splitview_window;
+
+	local cursor = vim.api.nvim_win_get_cursor(utils.buf_getwin(buffer));
+	pcall(vim.api.nvim_win_set_cursor, pre_win, cursor);
+
+	---_
+end
+
+helpview.splitview_render = function ()
+	---+${lua}
+
+	local utils = require("helpview.utils");
+	local buffer = helpview.state.splitview_source;
+
+	if helpview.buf_is_safe(buffer) == false then
+		--- Buffer isn't safe.
+		-- helpview.state.splitview_source = nil;
+		pcall(helpview.actions.splitClose);
+		return;
+	elseif helpview.win_is_safe(utils.buf_getwin(buffer)) == false then
+		--- Buffer doesn't have any windows attached.
+		pcall(helpview.actions.splitClose);
+		return;
+	end
+
+	--- In case the preview buffer/window got
+	--- deleted, we should regenerate them.
+	helpview.actions.__splitview_setup();
+
+	local max_lines = spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
+	local line_count = vim.api.nvim_buf_line_count(buffer);
+
+	local main_win = utils.buf_getwin(buffer);
+	local cursor = vim.api.nvim_win_get_cursor(main_win);
+
+	local pre_buf = helpview.state.splitview_buffer;
+	local pre_win = helpview.state.splitview_window;
+
+	local lines = vim.api.nvim_buf_get_lines(
+		buffer,
+		math.max(0, cursor[1] - (max_lines + 1)),
+		math.min(line_count, cursor[1] + (max_lines + 1)),
+		false
+	);
+	vim.api.nvim_buf_set_lines(
+		pre_buf,
+		math.max(0, cursor[1] - (max_lines + 1)),
+		math.min(line_count, cursor[1] + (max_lines + 1)),
+		false,
+		lines
+	);
+
+	pcall(vim.api.nvim_win_set_cursor, pre_win, cursor);
+
+	helpview.render(pre_buf, {
+		enable = true,
+		hybrid_mode = false
+	});
+	---_
+end
+
+helpview.actions = {
+	["__exec_callback"] = function (callback, ...)
+		if vim.list_contains({ "string", "integer" }, type(callback)) == false then
+			return;
+		end
+
+		---@type function | nil
+		local _f = spec.get({ "preview", "callbacks", callback }, { ignore_enable = true });
+		pcall(_f, ...);
+	end,
+
+	["__is_attached"] = function (buffer)
+		buffer = buffer or vim.api.nvim_get_current_buf();
+		return vim.list_contains(helpview.state.attached_buffers, buffer);
+	end,
+	["__is_enabled"] = function (buffer)
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return false;
+		else
+			return helpview.state.buffer_states[buffer].enable;
+		end
+	end,
+
+
+	["attach"] = function (buffer, state)
+		---+${lua}
+
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.can_attach(buffer) == false then
+			return;
+		end
+
+		local enable = spec.get({ "preview", "enable" }, { fallback = true, ignore_enable = true });
+		local hm_enable = spec.get({ "preview", "enable_hybrid_mode" }, { fallback = true, ignore_enable = true });
+
+		table.insert(helpview.state.attached_buffers, buffer);
+		helpview.state.buffer_states[buffer] = state or {
+			enable = enable,
+			hybrid_mode = hm_enable,
+
+			y = 0
+		};
+
+		helpview.actions.__exec_callback("on_attach", buffer, vim.fn.win_findbuf(buffer));
+
+		if enable == true then
+			helpview.actions.__exec_callback("on_enable", buffer, vim.fn.win_findbuf(buffer));
+
+			if hm_enable == true then
+				helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer));
+			else
+				helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer));
+			end
+
+			helpview.render(buffer);
+		else
+			helpview.actions.__exec_callback("on_disable", buffer, vim.fn.win_findbuf(buffer));
+			helpview.clear(buffer);
+		end
+
+		---_
+	end,
+	--- Detaches previewer from a buffer.
+	---@param buffer integer?
+	["detach"] = function (buffer)
+		---+${lua}
+
+		---@type integer
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.buf_is_safe(buffer) == false then
+			--- Something went wrong.
+			return;
+		elseif helpview.can_attach(buffer) == true then
+			--- This buffer hasn't been attached to.
+			return;
+		end
+
+		-- health.notify("trace", {
+		-- 	level = 9,
+		-- 	message = string.format("Detached: %d", buffer)
+		-- });
+		-- health.__child_indent_in();
+
+		--- Execute the attaching autocmd.
+		helpview.actions.__exec_callback("on_detach", buffer, vim.fn.win_findbuf(buffer))
+
+		--- Remove the entry.
+		--- DON'T REMOVE THE STATES THOUGH!
+		--- (We may need them in the future)
+		for i, buf in ipairs(helpview.state.attached_buffers) do
+			if buf == buffer then
+				table.remove(helpview.state.attached_buffers, i);
+			end
+		end
+
+		--- Clear decorations too!
+		helpview.clear(buffer);
+		-- health.__child_indent_de()
+		---_
+	end,
+
+	["disable"] = function (buffer)
+		---+${lua}
+		---@type integer
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return;
+		elseif type(helpview.state.buffer_states[buffer]) ~= "table" then
+			helpview.state.buffer_states[buffer] = nil;
+			return;
+		elseif buffer == helpview.state.splitview_source then
+			helpview.state.buffer_states[buffer].enable = false;
+			helpview.state.buffer_states[buffer].y = -999;
+
+			return;
+		end
+
+		-- health.notify("trace", {
+		-- 	level = 7,
+		-- 	message = string.format("Disabled: %d", buffer)
+		-- });
+		-- health.__child_indent_in();
+
+		helpview.state.buffer_states[buffer].enable = false;
+		helpview.clear(buffer);
+
+		--- Execute the attaching autocmd.
+		helpview.actions.__exec_callback("on_disable", buffer, vim.fn.win_findbuf(buffer))
+
+		local mode = vim.api.nvim_get_mode().mode;
+		---@type string[]
+		local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+
+		if vim.list_contains(hybd_modes, mode) == false then
+			-- health.__child_indent_de();
+			return;
+		end
+
+		--- Execute the attaching autocmd.
+		helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer))
+		-- health.__child_indent_de();
+		---_
+	end,
+	["enable"] = function (buffer)
+		---+${lua}
+		---@type integer
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return;
+		elseif type(helpview.state.buffer_states[buffer]) ~= "table" then
+			helpview.state.buffer_states[buffer] = nil;
+			return;
+		elseif buffer == helpview.state.splitview_source then
+			helpview.state.buffer_states[buffer].enable = true;
+			helpview.splitview_render();
+			return;
+		end
+
+		-- health.notify("trace", {
+		-- 	level = 6,
+		-- 	message = string.format("Enabled: %d", buffer)
+		-- });
+		-- health.__child_indent_in();
+
+		helpview.state.buffer_states[buffer].enable = true;
+
+		local mode = vim.api.nvim_get_mode().mode;
+		---@type string[]
+		local prev_modes = spec.get({ "preview", "modes" }, { fallback = {}, ignore_enable = true });
+		---@type string[]
+		local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+
+		if vim.list_contains(prev_modes, mode) == false then
+			-- health.__child_indent_de();
+			return;
+		end
+
+		helpview.render(buffer);
+
+		--- Execute the attaching autocmd.
+		helpview.actions.__exec_callback("on_enable", buffer, vim.fn.win_findbuf(buffer))
+
+		if vim.list_contains(hybd_modes, mode) == false then
+			-- health.__child_indent_de();
+			return;
+		end
+
+		--- Execute the attaching autocmd.
+		helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer))
+		--- Execute the autocmd too.
+		-- health.__child_indent_de();
+		---_
+	end,
+
+	["hybridEnable"] = function (buffer)
+		---+${lua}
+
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return;
+		elseif helpview.state.buffer_states[buffer] then
+			helpview.state.buffer_states[buffer].hybrid_mode = true;
+
+			if helpview.state.buffer_states[buffer].enable == false then
+				return;
+			elseif buffer == helpview.state.splitview_source then
+				return;
+			end
+
+			helpview.render(buffer);
+
+			local mode = vim.api.nvim_get_mode().mode;
+			---@type string[]
+			local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+
+			if vim.list_contains(hybd_modes, mode) == false then
+				return;
+			end
+
+			--- Execute the attaching autocmd.
+			helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer))
+		end
+
+		---_
+	end,
+
+	["hybridDisable"] = function (buffer)
+		--+${lua}
+
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return;
+		elseif helpview.state.buffer_states[buffer] then
+			helpview.state.buffer_states[buffer].hybrid_mode = false;
+
+			if helpview.state.buffer_states[buffer].enable == false then
+				return;
+			elseif buffer == helpview.state.splitview_source then
+				return;
+			end
+
+			helpview.render(buffer);
+
+			local mode = vim.api.nvim_get_mode().mode;
+			---@type string[]
+			local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+
+			if vim.list_contains(hybd_modes, mode) == false then
+				return;
+			end
+
+			--- Execute the attaching autocmd.
+			helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer))
+		end
+
+		---_
+	end,
+
+	["splitOpen"] = function (buffer)
+		--++${lua}
+
+		---@type integer
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.buf_is_safe(buffer) == false then
+			return;
+		end
+
+		helpview.actions.splitClose();
+
+		if helpview.actions.__is_enabled(buffer) == true then
+			helpview.actions.__exec_callback("on_disable", buffer, vim.fn.win_findbuf(buffer));
+		end
+
+		helpview.state.splitview_source = buffer;
+		helpview.actions.__splitview_setup();
+		helpview.clear(buffer);
+
+		helpview.actions.__exec_callback("on_splitview_open", buffer, helpview.state.splitview_buffer, helpview.state.splitview_window);
+
+		helpview.splitview_render();
+		---_
+	end,
+	["splitClose"] = function ()
+		---+${lua}
+		if type(helpview.state.splitview_source) ~= "number" then
+			--- Splitview's source buffer isn't a number. Why?
+			--- Assuming it's `nil`, we should stop here.
+			return;
+		end
+
+		--- FEAT, Allow `on_splitview_close` to take arguments
+		--- regarding splitview.
+		helpview.actions.__exec_callback("on_splitview_close", buffer, helpview.state.splitview_buffer, helpview.state.splitview_window);
+
+		--- Attempt to close the window.
+		--- Also remove the reference to that window.
+		pcall(vim.api.nvim_win_close, helpview.state.splitview_window, true);
+
+		--- We should also clean up the preview buffer(if possible).
+		if helpview.buf_is_safe(helpview.state.splitview_buffer) == true then
+			helpview.clear(helpview.state.splitview_buffer);
+			vim.api.nvim_buf_set_lines(helpview.state.splitview_buffer, 0, -1, false, {});
+		end
+
+		---@type integer
+		local buffer = helpview.state.splitview_source;
+
+		helpview.state.splitview_window = nil;
+		helpview.state.splitview_source = nil;
+
+		if helpview.buf_is_safe(buffer) == false then
+			--- Source buffer isn't safe for `helpview` to work.
+			return;
+		elseif type(helpview.state.buffer_states[buffer]) ~= "table" then
+			--- We never attached to the source buffer.
+			return;
+		end
+
+		helpview.actions.__exec_callback("on_enable", buffer, vim.fn.win_findbuf(buffer));
+
+		--- Don't forget to render the preview if possible.
+		if helpview.state.buffer_states[buffer].enable == true then
+			helpview.render(buffer);
+		end
+		---_
+	end
+};
+
+--- Holds various functions that you can run
+--- vim `:Markview ...`.
+---@type { [string]: function }
+helpview.commands = {
+	---+${class}
+
+	["traceExport"] = function ()
+		helpview.actions.traceExport();
+	end,
+	["traceShow"] = function (from, to)
+		if pcall(tonumber, from) and pcall(tonumber, to) then
+			health.trace_open(tonumber(from), tonumber(to));
+		else
+			health.trace_open();
+		end
+	end,
+
+	["attach"] = function (buffer)
+		helpview.actions.attach(buffer);
+	end,
+	["detach"] = function (buffer)
+		helpview.actions.detach(buffer);
+	end,
+
+	["Toggle"] = function ()
+		---+${class}
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.commands.toggle(buf);
+		end
+		---_
+	end,
+	["Enable"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.actions.enable(buf);
+		end
+	end,
+	["Disable"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.actions.disable(buf);
+		end
+	end,
+
+	["Render"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			if helpview.actions.__is_enabled(buf) then
+				helpview.render(buf);
+			end
+		end
+	end,
+	["Clear"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			if helpview.actions.__is_enabled(buf) then
+				helpview.clear(buf);
+			end
+		end
+	end,
+
+	["render"] = function (buffer)
+		helpview.clean();
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		helpview.render(buffer);
+	end,
+	["clear"] = function (buffer)
+		helpview.clean();
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		helpview.clear(buffer);
+	end,
+
+	["toggleAll"] = function ()
+		health.notify("deprecation", {
+			option = ":Markview toggleAll",
+			alter = ":Markview Toggle",
+			silent = true
+		});
+
+		helpview.commands.Toggle();
+	end,
+	["enableAll"] = function ()
+		health.notify("deprecation", {
+			option = ":Markview enableAll",
+			alter = ":Markview Enable",
+			silent = true
+		});
+
+		helpview.commands.Enable();
+	end,
+	["disableAll"] = function ()
+		health.notify("deprecation", {
+			option = ":Markview disableAll",
+			alter = ":Markview Disable",
+			silent = true
+		});
+
+		helpview.commands.Disable();
+	end,
+
+	["toggle"] = function (buffer)
+		---+${class}
+		buffer = buffer or vim.api.nvim_get_current_buf();
+		helpview.clean();
+
+		local state = helpview.state.buffer_states[buffer];
+
+		if state == nil then
+			return;
+		elseif state.enable == true then
+			helpview.commands.disable(buffer);
+		else
+			helpview.commands.enable(buffer);
+		end
+		---_
+	end,
+	["enable"] = function (buffer)
+		helpview.actions.enable(buffer)
+	end,
+	["disable"] = function (buffer)
+		helpview.actions.disable(buffer)
+	end,
+
+	["hybridToggle"] = function (buffer)
+		buffer = buffer or vim.api.nvim_get_current_buf();
+
+		if helpview.actions.__is_attached(buffer) == false then
+			return;
+		elseif type(helpview.state.buffer_states[buffer]) ~= "table" then
+			return;
+		elseif helpview.state.buffer_states[buffer].hybrid_mode == true then
+			helpview.actions.hybridDisable(buffer);
+		else
+			helpview.actions.hybridEnable(buffer);
+		end
+	end,
+	["hybridDisable"] = function (buffer)
+		helpview.actions.hybridDisable(buffer);
+	end,
+	["hybridEnable"] = function (buffer)
+		helpview.actions.hybridEnable(buffer);
+	end,
+
+	["HybridToggle"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.commands.hybridToggle(buf);
+		end
+	end,
+
+	["HybridDisable"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.commands.hybridDisable(buf);
+		end
+	end,
+
+	["HybridEnable"] = function ()
+		helpview.clean();
+
+		for _, buf in ipairs(helpview.state.attached_buffers) do
+			helpview.commands.hybridEnable(buf);
+		end
+	end,
+
+	["splitToggle"] = function ()
+		---+${class}
+
+		if type(helpview.state.splitview_source) ~= "number" then
+			helpview.actions.splitOpen();
+		elseif helpview.win_is_safe(helpview.state.splitview_window) == false then
+			helpview.actions.splitClose();
+			helpview.actions.splitOpen();
+		else
+			helpview.actions.splitClose();
+		end
+		---_
+	end,
+
+	["splitRedraw"] = function ()
+		helpview.splitview_render();
+	end,
+
+	["splitOpen"] = function (buffer)
+		helpview.actions.splitOpen(buffer)
+	end,
+
+	["splitClose"] = function ()
+		helpview.actions.splitClose()
+	end,
+
+	["Start"] = function ()
+		helpview.state.enable = true;
+	end,
+	["Stop"] = function ()
+		helpview.state.enable = false;
+	end,
+
+	["open"] = function ()
+		require("helpview.links").open();
+	end
+	---_
+};
+
+helpview.setup = function (user_config)
+	require("helpview.spec").setup(user_config);
 end
 
 return helpview;
