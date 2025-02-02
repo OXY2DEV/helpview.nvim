@@ -41,6 +41,205 @@ vimdoc.__fix_indent = function (buffer, item, offset)
 	---_
 end
 
+vimdoc.argument = function (buffer, item)
+	---+${lua}
+
+	---@type vimdoc.arguments?
+	local main_config = spec.get({ "vimdoc", "arguments" });
+
+	if not main_config then
+		return;
+	end
+
+	---@type vimdoc.generic?
+	local config = utils.match(main_config, item.label, {});
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_col = range.col_start + 1,
+		conceal = "",
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
+		undo_restore = false, invalidate = true,
+		end_col = range.col_end,
+		conceal = "",
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	---@type string Added virtual text.
+	local ext = table.concat({
+		config.padding_left or "",
+		config.corner_left or "",
+		config.icon or "",
+
+		config.padding_right or "",
+		config.corner_right or ""
+	});
+
+	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+
+	if not config.hl then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = utils.set_hl(config.hl)
+	});
+
+	---_
+end
+
+vimdoc.code_block = function (buffer, item)
+	---+${lua}
+
+	local config = spec.get({ "vimdoc", "code_blocks" });
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	local function get_line_config (line)
+		local line_config;
+
+		if not item.language then
+			line_config = config.default;
+		else
+			line_config = utils.match(config, item.language, {
+				def_fallback = {
+					block_hl = config.border_hl
+				},
+				fallback = {
+					block_hl = config.border_hl
+				}
+			});
+		end
+
+		if type(line_config) == "function" then
+			line_config = line_config(buffer, line);
+		end
+
+		return line_config;
+	end
+
+	local decorations = filetypes.get(item.language);
+	local label = { string.format(" %s%s ", decorations.icon, decorations.name), utils.set_hl(config.label_hl or decorations.icon_hl) };
+
+	if item.top_border[1] == true then
+		--- Virtual line
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+			undo_restore = false, invalidate = true,
+			end_col = range.col_start + 1 + #(item.language or ""),
+			conceal = "",
+
+			virt_lines = item.top_border[2] == true and {
+				{
+					{ "" }
+				},
+				{
+					label,
+					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) }
+				}
+			} or {
+				{
+					label,
+					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) }
+				}
+			}
+		});
+	else
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+			undo_restore = false, invalidate = true,
+			end_col = range.col_start + 1 + #(item.language or ""),
+			conceal = "",
+
+			virt_lines_above = true,
+			virt_lines = item.top_border[2] == true and {
+				{
+					{ "" }
+				}
+			} or nil,
+
+			virt_text_pos = "overlay",
+			virt_text = { label },
+			line_hl_group = utils.set_hl(config.border_hl)
+		});
+	end
+
+	for l = range.row_start + 1, range.row_end - 1 do
+		local _l = (l - range.row_start) + 1;
+		local l_conf = get_line_config(item.text[_l]);
+
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, l, 0, {
+			undo_restore = false, invalidate = true,
+			line_hl_group = utils.set_hl(l_conf.block_hl)
+		});
+	end
+
+	if item.bottom_border[1] == true then
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+			undo_restore = false, invalidate = true,
+
+			virt_lines_above = true,
+			virt_lines = item.bottom_border[2] == true and {
+				{
+					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) },
+				},
+				{
+					{ "" }
+				},
+			} or {
+				{
+					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) },
+				},
+			}
+		});
+	else
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+			undo_restore = false, invalidate = true,
+
+			virt_lines = item.top_border[2] == true and {
+				{
+					{ "" }
+				}
+			} or nil,
+
+			line_hl_group = utils.set_hl(config.border_hl)
+		});
+	end
+
+	-- if item.padding_bottom == true then
+	-- else
+	-- end
+
+	---_
+end
+
 vimdoc.heading = function (buffer, item)
 	---+${lua}
 
@@ -142,6 +341,26 @@ vimdoc.heading_no_delim = function (buffer, item)
 	---_
 end
 
+vimdoc.hl = function (buffer, item)
+	---+
+
+	local range = item.range;
+	local config = spec.get({ "vimdoc", "highlight_groups" });
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = item.group_name
+	});
+
+	---_
+end
+
 vimdoc.hr = function (buffer, item)
 	---+${lua}
 
@@ -203,6 +422,324 @@ vimdoc.hr = function (buffer, item)
 
 		hl_mode = "combine"
 	});
+	---_
+end
+
+vimdoc.inline_code = function (buffer, item)
+	---+${lua}
+
+	local config = spec.get({ "vimdoc", "inline_codes" });
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_col = range.col_start + 1,
+		conceal = "",
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
+		undo_restore = false, invalidate = true,
+		end_col = range.col_end,
+		conceal = "",
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	if not config.hl then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = utils.set_hl(config.hl)
+	});
+
+	---_
+end
+
+vimdoc.keycode = function (buffer, item)
+	---+${lua}
+
+	local main_config = spec.get({ "vimdoc", "keycodes" });
+
+	if not main_config then
+		return;
+	end
+
+	local config = utils.match(main_config, item.label, {});
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	---@type string Added virtual text.
+	local ext = table.concat({
+		config.padding_left or "",
+		config.corner_left or "",
+		config.icon or "",
+
+		config.padding_right or "",
+		config.corner_right or ""
+	});
+
+	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+
+	if not config.hl then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = utils.set_hl(config.hl)
+	});
+
+	---_
+end
+
+vimdoc.modeline = function (buffer, item)
+	---+${lua}
+
+	local config = spec.get({ "vimdoc", "modelines" });
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	local _v = {};
+	local type_config = config.data_types or {};
+	local l, r = math.ceil((vim.bo[buffer].tw - 1) / 2), math.floor((vim.bo[buffer].tw - 1) / 2);
+
+	table.insert(_v, {
+		{
+			string.format("% " .. l .. "s", "Option"),
+			utils.set_hl(config.default and config.default.option_hl)
+		},
+		{ " " },
+		{
+			string.format("%-" .. r .. "s", "Value"),
+			utils.set_hl(config.default and config.default.value_hl)
+		},
+	});
+
+	table.insert(_v, {
+		{
+			string.rep(config.border or "-", l),
+			utils.set_hl(config.border_hl)
+		},
+		{ " " },
+		{
+			string.rep(config.border or "-", r),
+			utils.set_hl(config.border_hl)
+		},
+	});
+
+	for _, opt in ipairs(item.options) do
+		local option_config = type_config[type(opt.value)] or {};
+
+		option_config = vim.tbl_extend("keep",
+			option_config,
+			utils.match(config, opt.option, { ignore_keys = { "data_types" }
+		}));
+
+		table.insert(_v, {
+			{
+				string.format("% " .. l .. "s", opt.option),
+				utils.set_hl(option_config.option_hl)
+			},
+			{ " " },
+			{
+				string.format("%-" .. r .. "s", vim.inspect(opt.value)),
+				utils.set_hl(option_config.value_hl)
+			},
+		});
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end, end_col = range.col_end,
+		conceal = "",
+
+		virt_lines_above = true,
+		virt_lines = _v,
+
+		virt_text_pos = "overlay",
+		virt_text = _v[2],
+
+		hl_mode = "combine"
+	});
+
+	---_
+end
+
+vimdoc.note = function (buffer, item)
+	---+${lua}
+
+	local main_config = spec.get({ "vimdoc", "notes" });
+
+	if not main_config then
+		return;
+	end
+
+	local config = utils.match(main_config, item.label, {});
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	if not config.hl then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = utils.set_hl(config.hl)
+	});
+
+	---_
+end
+
+vimdoc.optionlink = function (buffer, item)
+	---+${lua}
+
+	local main_config = spec.get({ "vimdoc", "optionlinks" });
+
+	if not main_config then
+		return;
+	end
+
+	local config = utils.match(main_config, item.label, {});
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	---@type string Added virtual text.
+	local ext = table.concat({
+		config.padding_left or "",
+		config.corner_left or "",
+		config.icon or "",
+
+		config.padding_right or "",
+		config.corner_right or ""
+	});
+
+	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+
+	if not config.hl then
+		return;
+	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+		end_row = range.row_end,end_col = range.col_end,
+
+		hl_group = utils.set_hl(config.hl)
+	});
+
 	---_
 end
 
@@ -348,491 +885,14 @@ vimdoc.taglink = function (buffer, item)
 	---_
 end
 
-vimdoc.optionlink = function (buffer, item)
-	---+${lua}
-
-	local main_config = spec.get({ "vimdoc", "optionlinks" });
-
-	if not main_config then
-		return;
-	end
-
-	local config = utils.match(main_config, item.label, {});
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
-			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
-			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
-		},
-
-		hl_mode = "combine"
-	});
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
-
-		hl_mode = "combine"
-	});
-
-	---@type string Added virtual text.
-	local ext = table.concat({
-		config.padding_left or "",
-		config.corner_left or "",
-		config.icon or "",
-
-		config.padding_right or "",
-		config.corner_right or ""
-	});
-
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
-
-	if not config.hl then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end,end_col = range.col_end,
-
-		hl_group = utils.set_hl(config.hl)
-	});
-
-	---_
-end
-
-vimdoc.keycode = function (buffer, item)
-	---+${lua}
-
-	local main_config = spec.get({ "vimdoc", "keycodes" });
-
-	if not main_config then
-		return;
-	end
-
-	local config = utils.match(main_config, item.label, {});
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
-			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
-			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
-		},
-
-		hl_mode = "combine"
-	});
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
-
-		hl_mode = "combine"
-	});
-
-	---@type string Added virtual text.
-	local ext = table.concat({
-		config.padding_left or "",
-		config.corner_left or "",
-		config.icon or "",
-
-		config.padding_right or "",
-		config.corner_right or ""
-	});
-
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
-
-	if not config.hl then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end,end_col = range.col_end,
-
-		hl_group = utils.set_hl(config.hl)
-	});
-
-	---_
-end
-
-vimdoc.note = function (buffer, item)
-	---+${lua}
-
-	local main_config = spec.get({ "vimdoc", "notes" });
-
-	if not main_config then
-		return;
-	end
-
-	local config = utils.match(main_config, item.label, {});
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
-			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
-			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
-		},
-
-		hl_mode = "combine"
-	});
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
-		undo_restore = false, invalidate = true,
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
-
-		hl_mode = "combine"
-	});
-
-	if not config.hl then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end,end_col = range.col_end,
-
-		hl_group = utils.set_hl(config.hl)
-	});
-
-	---_
-end
-
-vimdoc.argument = function (buffer, item)
-	---+${lua}
-
-	local main_config = spec.get({ "vimdoc", "arguments" });
-
-	if not main_config then
-		return;
-	end
-
-	local config = utils.match(main_config, item.label, {});
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_col = range.col_start + 1,
-		conceal = "",
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
-			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
-			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
-		},
-
-		hl_mode = "combine"
-	});
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
-		undo_restore = false, invalidate = true,
-		end_col = range.col_end,
-		conceal = "",
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
-
-		hl_mode = "combine"
-	});
-
-	---@type string Added virtual text.
-	local ext = table.concat({
-		config.padding_left or "",
-		config.corner_left or "",
-		config.icon or "",
-
-		config.padding_right or "",
-		config.corner_right or ""
-	});
-
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
-
-	if not config.hl then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end,end_col = range.col_end,
-
-		hl_group = utils.set_hl(config.hl)
-	});
-
-	---_
-end
-
-vimdoc.inline_code = function (buffer, item)
-	---+${lua}
-
-	local config = spec.get({ "vimdoc", "inline_codes" });
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_col = range.col_start + 1,
-		conceal = "",
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
-			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
-			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
-		},
-
-		hl_mode = "combine"
-	});
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
-		undo_restore = false, invalidate = true,
-		end_col = range.col_end,
-		conceal = "",
-
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
-
-		hl_mode = "combine"
-	});
-
-	if not config.hl then
-		return;
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end,end_col = range.col_end,
-
-		hl_group = utils.set_hl(config.hl)
-	});
-
-	---_
-end
-
-vimdoc.code_block = function (buffer, item)
-	---+${lua}
-
-	local config = spec.get({ "vimdoc", "code_blocks" });
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	local function get_line_config (line)
-		local line_config;
-
-		if not item.language then
-			line_config = config.default;
-		else
-			line_config = utils.match(config, item.language, {
-				def_fallback = {
-					block_hl = config.border_hl
-				},
-				fallback = {
-					block_hl = config.border_hl
-				}
-			});
-		end
-
-		if type(line_config) == "function" then
-			line_config = line_config(buffer, line);
-		end
-
-		return line_config;
-	end
-
-	local decorations = filetypes.get(item.language);
-	local label = { string.format(" %s%s ", decorations.icon, decorations.name), utils.set_hl(config.label_hl or decorations.icon_hl) };
-
-	if item.use_virt_line == true then
-		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-			undo_restore = false, invalidate = true,
-			end_col = range.col_start + 1 + #(item.language or ""),
-			conceal = "",
-
-			virt_lines = {
-				{
-					{ "" }
-				},
-				{
-					label,
-					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) }
-				}
-			}
-		});
-	else
-		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-			undo_restore = false, invalidate = true,
-			end_col = range.col_start + 1 + #(item.language or ""),
-			conceal = "",
-
-			virt_text_pos = "overlay",
-			virt_text = { label },
-			line_hl_group = utils.set_hl(config.border_hl)
-		});
-	end
-
-	for l = range.row_start + 1, range.row_end - 1 do
-		local _l = (l - range.row_start) + 1;
-		local l_conf = get_line_config(item.text[_l]);
-
-		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, l, 0, {
-			undo_restore = false, invalidate = true,
-			line_hl_group = utils.set_hl(l_conf.block_hl)
-		});
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
-		undo_restore = false, invalidate = true,
-
-		virt_lines_above = true,
-		virt_lines = {
-			{
-				{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) },
-			}
-		}
-	});
-
-	---_
-end
-
-vimdoc.modeline = function (buffer, item)
-	---+${lua}
-
-	local config = spec.get({ "vimdoc", "modelines" });
-	local range = item.range;
-
-	if not config then
-		return;
-	end
-
-	local _v = {};
-	local type_config = config.data_types or {};
-	local l, r = math.ceil((vim.bo[buffer].tw - 1) / 2), math.floor((vim.bo[buffer].tw - 1) / 2);
-
-	table.insert(_v, {
-		{
-			string.format("% " .. l .. "s", "Option"),
-			utils.set_hl(config.default and config.default.option_hl)
-		},
-		{ " " },
-		{
-			string.format("%-" .. r .. "s", "Value"),
-			utils.set_hl(config.default and config.default.value_hl)
-		},
-	});
-
-	table.insert(_v, {
-		{
-			string.rep(config.border or "-", l),
-			utils.set_hl(config.border_hl)
-		},
-		{ " " },
-		{
-			string.rep(config.border or "-", r),
-			utils.set_hl(config.border_hl)
-		},
-	});
-
-	for _, opt in ipairs(item.options) do
-		local option_config = type_config[type(opt.value)] or {};
-
-		option_config = vim.tbl_extend("keep",
-			option_config,
-			utils.match(config, opt.option, { ignore_keys = { "data_types" }
-		}));
-
-		table.insert(_v, {
-			{
-				string.format("% " .. l .. "s", opt.option),
-				utils.set_hl(option_config.option_hl)
-			},
-			{ " " },
-			{
-				string.format("%-" .. r .. "s", vim.inspect(opt.value)),
-				utils.set_hl(option_config.value_hl)
-			},
-		});
-	end
-
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
-		undo_restore = false, invalidate = true,
-		end_row = range.row_end, end_col = range.col_end,
-		conceal = "",
-
-		virt_lines_above = true,
-		virt_lines = _v,
-
-		virt_text_pos = "overlay",
-		virt_text = _v[2],
-
-		hl_mode = "combine"
-	});
-
-	---_
-end
-
 vimdoc.render = function (buffer, content)
 	vimdoc.lnum_offsets = {};
 
 	for _, item in ipairs(content or {}) do
 		local _, err = pcall(vimdoc[item.class:gsub("^vimdoc%_", "")], buffer, item);
-		-- if err then
-		-- 	vim.print(err);
-		-- end
+		if err then
+			vim.print(err);
+		end
 	end
 end
 

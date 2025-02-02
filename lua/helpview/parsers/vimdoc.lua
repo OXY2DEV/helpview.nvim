@@ -8,7 +8,11 @@ vimdoc.content = {};
 --- Queried contents, but sorted
 vimdoc.sorted = {}
 
+--- Inserts an item.
+---@param data table
 vimdoc.insert = function (data)
+	---+
+
 	table.insert(vimdoc.content, data);
 
 	if not vimdoc.sorted[data.class] then
@@ -16,410 +20,95 @@ vimdoc.insert = function (data)
 	end
 
 	table.insert(vimdoc.sorted[data.class], data);
+
+	---_
 end
 
---- YAML property.
+--- Function arguments.
 ---@param buffer integer
----@param TSNode table
 ---@param text string[]
 ---@param range node.range
-vimdoc.property = function (buffer, TSNode, text, range)
-	---+${lua}
+vimdoc.argument = function (buffer, _, text, range)
+	---+
 
-	local key, value = TSNode:field("key")[1], TSNode:field("value")[1];
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
-	local key_text = key and vim.treesitter.get_node_text(key, buffer) or nil;
-	local value_text = value and vim.treesitter.get_node_text(value, buffer) or nil;
-
-	--- Checks if {str} matches any of the
-	--- date patterns.
-	---@param str string?
-	---@return boolean
-	local function is_date (str)
-		---+${lua}
-		if type(str) ~= "string" then
-			return false;
-		end
-
-		local spec = require("markview.spec");
-		local formats = spec.get({ "experimental", "date_formats" }, { fallback = {} });
-
-		for _, format in ipairs(formats) do
-			if string.match(str, format) then
-				return true;
-			end
-		end
-
-		return false;
-		---_
-	end
-
-	--- Checks if {str} matches any of the
-	--- date & time patterns.
-	---@param str string?
-	---@return boolean
-	local function is_date_time (str)
-		---+${lua}
-		if type(str) ~= "string" then
-			return false;
-		end
-
-		local spec = require("markview.spec");
-		local formats = spec.get({ "experimental", "date_time_formats" }, { fallback = {} });
-
-		for _, format in ipairs(formats) do
-			if string.match(str, format) then
-				return true;
-			end
-		end
-
-		return false;
-		---_
-	end
-
-	--- Checks if this node contains
-	--- a list.
-	local function is_list()
-		---+${lua}
-		if type(value) ~= "table" then
-			return false;
-		elseif value:child(0) == nil then
-			--- `value:` has no node.
-			return false;
-		elseif value:child(0):child(0) == nil then
-			return false;
-		elseif value:child(0):child(0):type() ~= "block_sequence" then
-			return false;
-		end
-
-		return true;
-		---_
-	end
-
-	local value_type = "unknown";
-
-	if is_date_time(value_text) == true then
-		value_type = "date_&_time";
-	elseif is_date(value_text) == true then
-		value_type = "date";
-	elseif is_list() == true then
-		value_type = "list";
-	elseif tonumber(value_text) ~= nil then
-		value_type = "number";
-	elseif value_text == "true" or value_text == "false" then
-		value_type = "checkbox";
-	elseif type(value_text) == "string" then
-		value_type = "text";
-	elseif value_type == nil then
-		value_type = "nil";
-	end
-
-	if range.col_end == 0 then
-		range.row_end = range.row_start + #text - 1;
-	end
-
-	---@type __yaml.properties
-	yaml.insert({
-		class = "yaml_property",
-		type = value_type,
-
-		key = key_text,
-		value = value_text,
+	vimdoc.insert({
+		class = "vimdoc_argument",
+		label = text[1]:gsub("[%{%}]", ""),
+		after = after:match("^	+"),
 
 		text = text,
 		range = range
 	});
+
 	---_
 end
 
--- return yaml;
+--- Vimdoc code blocks.
+---@param buffer integer
+---@param TSNode table
+---@param text string[]
+---@param range node.range
+vimdoc.code_block = function (buffer, TSNode, text, range)
+	---+
 
----+${lua}
-		-- if capture_name == "heading" then
-		-- 	local delimiter = capture_node:named_child(0); --- The ==== part
-		-- 	local heading = capture_node:named_child(1);
-		--
-		-- 	local h_start, h_c_start, h_end, h_c_end = heading:range();
-		-- 	local h_txt = vim.api.nvim_buf_get_lines(buffer, h_start, h_start + 1, false)[1];
-		--
-		-- 	local modelines = vim.g.modelines or 5;
-		-- 	local buf_lines = vim.api.nvim_buf_line_count(buffer);
-		--
-		-- 	if h_txt == "" then
-		-- 		local d_col_end = vim.fn.strchars(vim.api.nvim_buf_get_lines(buffer, row_start, row_start + 1, false)[1] or "");
-		--
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "horizontal_rule",
-		-- 			text = vim.treesitter.get_node_text(delimiter, buffer),
-		--
-		-- 			row_start = row_start,
-		-- 			col_start = col_start,
-		--
-		-- 			row_end = row_end,
-		-- 			col_end = d_col_end
-		-- 		});
-		-- 	elseif h_txt:match("%s*vim:([^:]*):") and (h_start <= modelines or h_start >= (buf_lines - modelines)) then
-		-- 		local d_col_end = vim.fn.strchars(vim.api.nvim_buf_get_lines(buffer, row_start, row_start + 1, false)[1] or "");
-		--
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "horizontal_rule",
-		-- 			text = delimiter,
-		--
-		-- 			row_start = row_start,
-		-- 			col_start = col_start,
-		--
-		-- 			row_end = row_start,
-		-- 			col_end = d_col_end
-		-- 		});
-		--
-		-- 		local options = {};
-		--
-		-- 		for part in h_txt:gmatch("([^:]*)") do
-		-- 			if part:match("(%S*)=(%S*)") then
-		-- 				for opt, _ in part:gmatch("(%S*)=(%S*)") do
-		-- 					table.insert(options, parser.get_opt(opt))
-		-- 				end
-		-- 			elseif part and part ~= "" and not part:match("^%s*(vim)") then
-		-- 				table.insert(options, parser.get_opt(part))
-		-- 			end
-		-- 		end
-		--
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "modeline",
-		-- 			options = options,
-		--
-		-- 			row_start = h_start,
-		-- 			col_start = h_c_start,
-		--
-		-- 			row_end = h_end,
-		-- 			col_end = h_c_end
-		-- 		});
-		-- 	else
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "heading",
-		-- 			level = tonumber(capture_node:type():sub(2)),
-		--
-		-- 			delimiter = vim.treesitter.get_node_text(delimiter, buffer),
-		-- 			text = h_txt,
-		--
-		-- 			row_start = row_start,
-		-- 			col_start = col_start,
-		--
-		-- 			__r_end = row_end - 1,
-		--
-		-- 			row_end = row_end,
-		-- 			col_end = col_end
-		-- 		})
-		-- 	end
-		-- elseif capture_name == "heading_no_delimiter" then
-		-- 	local heading = capture_node:named_child(0);
-		--
-		-- 	local h_start = heading:range();
-		-- 	local h_txt = vim.api.nvim_buf_get_lines(buffer, h_start, h_start + 1, false)[1];
-		--
-		-- 	local level = 3;
-		--
-		-- 	if capture_node:type() == "column_heading" then
-		-- 		level = 4;
-		-- 	end
-		--
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "heading",
-		-- 		level = level,
-		--
-		-- 		delimiter = nil,
-		-- 		text = h_txt,
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end - 1,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "may_be_hl" then
-		-- 	if not capture_text:match("^%$(.*)%$$") then
-		-- 		goto notHl;
-		-- 	end
-		--
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "highlight_group",
-		-- 		name = capture_text:gsub("%$", ""),
-		--
-		-- 		text = capture_text:gsub("%$", ""),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	});
-		--
-		-- 	::notHl::
-		-- elseif capture_name == "code_block" then
-		-- 	local language_node = capture_node:named_child(0);
-		-- 	local codes = vim.api.nvim_buf_get_lines(buffer, row_start + 1, row_end, false);
-		--
-		-- 	local line_lens = {};
-		-- 	local max_line_len = 0;
-		--
-		-- 	local indent = 0;
-		--
-		-- 	for _, line in ipairs(codes) do
-		-- 		local wh = line:match("(%s*).*");
-		-- 		local content = line:match("%s*(.*)");
-		--
-		-- 		table.insert(line_lens, vim.fn.strchars(content));
-		--
-		-- 		if vim.fn.strchars(content) > max_line_len then
-		-- 			max_line_len = vim.fn.strchars(content);
-		-- 		end
-		--
-		-- 		if vim.fn.strdisplaywidth(wh) > indent then
-		-- 			indent = vim.fn.strdisplaywidth(wh);
-		-- 		end
-		-- 	end
-		--
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "code_block",
-		--
-		-- 		language = language_node ~= nil and language_node:type() == "language" and vim.treesitter.get_node_text(language_node, buffer) or "",
-		-- 		lines = codes,
-		--
-		-- 		indent = indent,
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	});
-		-- elseif capture_name == "tag" then
-		-- 	if row_start == 0 then
-		-- 		local line = capture_node:parent();
-		-- 		local complete_line = vim.treesitter.get_node_text(line, buffer)
-		-- 		row_start, col_start, row_end, col_end = line:range();
-		--
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "title",
-		--
-		-- 			title = capture_text:gsub("*", ""),
-		-- 			description = complete_line:match(capture_text .. "*%s*(.*)"),
-		--
-		-- 			row_start = row_start,
-		-- 			col_start = col_start,
-		--
-		-- 			row_end = row_end,
-		-- 			col_end = col_end
-		-- 		})
-		-- 	else
-		-- 		table.insert(parser.parsed_content, {
-		-- 			type = "tag",
-		-- 			text = capture_text:gsub("*", ""),
-		--
-		-- 			row_start = row_start,
-		-- 			col_start = col_start,
-		--
-		-- 			row_end = row_end,
-		-- 			col_end = col_end
-		-- 		})
-		-- 	end
-		-- elseif capture_name == "mention_link" then
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "link",
-		-- 		text = capture_text:gsub("%|", ""),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "option_link" then
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "option_link",
-		-- 		text = capture_text:gsub("[']", ""),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "inline_code" then
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "inline_code",
-		-- 		text = capture_text:gsub("`", ""),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "key_code" then
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "key_code",
-		-- 		text = capture_text:gsub("[%<%>]", ""),
-		-- 		extracted = capture_text:match("%<(.-)%>"),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "arg" then
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "argument",
-		-- 		text = capture_text:gsub("[%{%}]", ""),
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end
-		-- 	})
-		-- elseif capture_name == "note" then
-		-- 	local note_text = capture_text:gsub(":", "");
-		--
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "note",
-		-- 		text = note_text,
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = col_start,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = col_end == #note_text and col_end + 1 or col_end
-		-- 	})
-		-- elseif capture_name == "modeline" then
-		-- 	local options = {};
-		-- 	local full_line = vim.api.nvim_buf_get_lines(buffer, row_start, row_start + 1, false)[1];
-		--
-		-- 	for part in capture_text:gmatch("([^:]*)") do
-		-- 		if part:match("(%S*)=(%S*)") then
-		-- 			for opt, _ in part:gmatch("(%S*)=(%S*)") do
-		-- 				table.insert(options, parser.get_opt(opt));
-		-- 			end
-		-- 		elseif part ~= "" and not part:match("^%s*(vim)") then
-		-- 			table.insert(options, parser.get_opt(part))
-		-- 		end
-		-- 	end
-		--
-		-- 	table.insert(parser.parsed_content, {
-		-- 		type = "modeline",
-		-- 		options = options,
-		--
-		-- 		row_start = row_start,
-		-- 		col_start = 0,
-		--
-		-- 		row_end = row_end,
-		-- 		col_end = vim.fn.strchars(full_line)
-		-- 	});
-		-- end
----_
+	local first_child = TSNode:named_child(0);
+	local language;
 
+	if first_child:type() == "language" then
+		language = vim.treesitter.get_node_text(first_child, buffer):gsub("^%>", "");
+	end
 
+	local function top_stat ()
+		local before = vim.api.nvim_buf_get_text(buffer, range.row_start, 0, range.row_start, range.col_start, {})[1];
+		local use_virt = before:match("^%s*$") == nil;
+
+		if range.row_start - 1 < 0 then
+			vim.print(before)
+			return use_virt, use_virt;
+		elseif range.col_start == 0 then
+			local top = vim.api.nvim_buf_get_lines(buffer, range.row_start - 1, range.row_start, false)[1];
+			return use_virt, top:match("^%s*$") == nil;
+		else
+			return use_virt, before:match("^%s*$") == nil;
+		end
+
+	end
+
+	local function bottom_stat ()
+		local after = vim.api.nvim_buf_get_text(buffer, range.row_end, 0, range.row_end, -1, {})[1]:gsub("^%<", "");
+		local use_virt = after:match(".+") ~= nil;
+
+		if range.row_end + 1 > vim.api.nvim_buf_line_count(buffer) - 1 then
+			return use_virt, false;
+		elseif range.col_start == 0 then
+			local bottom = vim.api.nvim_buf_get_lines(buffer, range.row_start - 1, range.row_start, false)[1];
+			return use_virt, bottom:match("^%s*$") == nil;
+		else
+			return use_virt, after:match("^%s*$") == nil;
+		end
+	end
+
+	vimdoc.insert({
+		class = "vimdoc_code_block",
+		language = language,
+
+		top_border = { top_stat() },
+		bottom_border = { bottom_stat() },
+
+		text = text,
+		range = range
+	});
+
+	---_
+end
+
+--- Level 1/2 headings.
+---@param buffer integer
+---@param TSNode table
+---@param text string[]
+---@param range node.range
 vimdoc.heading = function (buffer, TSNode, text, range)
 	---+${lua}
 
@@ -497,8 +186,11 @@ vimdoc.heading = function (buffer, TSNode, text, range)
 	---_
 end
 
+--- Level 3/4 headings.
+---@param text string[]
+---@param range node.range
 vimdoc.heading_no_delim = function (_, _, text, range)
-	--- ^HEADING
+	---+
 
 	if text[1]:match("%*%S-%*") then
 		return;
@@ -515,70 +207,53 @@ vimdoc.heading_no_delim = function (_, _, text, range)
 		text = text,
 		range = range
 	});
+
+	---_
 end
 
+--- Horizontal rules.
+---@param text string[]
+---@param range node.range
 vimdoc.hr = function (_, _, text, range)
+	---+
+
 	vimdoc.insert({
 		class = "vimdoc_hr",
 
 		text = text,
 		range = range
 	});
+
+	---_
 end
 
-vim.word = function (_, _, text, range)
-	if vim.fn.hlexists(text[1]) then
-		--- Highlight group name.
-		vimdoc.insert({
-			class = "vimdoc_hl",
-			group_name = text[1],
+--- Inline codes.
+---@param buffer integer
+---@param text string[]
+---@param range node.range
+vimdoc.inline_code = function (buffer, _, text, range)
+	---+
 
-			text = text,
-			range = range
-		});
-	end
-end
-
-vimdoc.tag = function (buffer, _, text, range)
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
 	vimdoc.insert({
-		class = "vimdoc_tag",
-		tag = text[1]:gsub("%*", ""),
+		class = "vimdoc_inline_code",
 		after = after:match("^	+"),
 
 		text = text,
 		range = range
 	});
+
+	---_
 end
 
-vimdoc.taglink = function (buffer, _, text, range)
-	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-	vimdoc.insert({
-		class = "vimdoc_taglink",
-		label = text[1]:gsub("%|", ""),
-		after = after:match("^	+"),
-
-		text = text,
-		range = range
-	});
-end
-
-vimdoc.optionlink = function (buffer, _, text, range)
-	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-	vimdoc.insert({
-		class = "vimdoc_optionlink",
-		label = text[1]:gsub("%|", ""),
-		after = after:match("^	+"),
-
-		text = text,
-		range = range
-	});
-end
-
+--- Keycodes.
+---@param buffer integer
+---@param text string[]
+---@param range node.range
 vimdoc.keycode = function (buffer, _, text, range)
+	---+
+
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
 	vimdoc.insert({
@@ -589,86 +264,16 @@ vimdoc.keycode = function (buffer, _, text, range)
 		text = text,
 		range = range
 	});
+
+	---_
 end
 
-vimdoc.note = function (buffer, TSNode, text, range)
-	local parent = TSNode:parent();
-	local types = { "tag", "taglink", "optionlink", "argument", "codespan" };
+--- Vim modeline.
+---@param text string[]
+---@param range node.range
+vimdoc.modeline = function (_, _, text, range)
+	---+
 
-	while parent do
-		if vim.list_contains(types, parent:type()) then
-			return;
-		end
-
-		parent = parent:parent();
-	end
-
-	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-	vimdoc.insert({
-		class = "vimdoc_note",
-		label = text[1]:gsub("%|", ""),
-		after = after:match("^	+"),
-
-		text = text,
-		range = range
-	});
-end
-
-vimdoc.argument = function (buffer, _, text, range)
-	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-	vimdoc.insert({
-		class = "vimdoc_argument",
-		label = text[1]:gsub("[%{%}]", ""),
-		after = after:match("^	+"),
-
-		text = text,
-		range = range
-	});
-end
-
-vimdoc.inline_code = function (buffer, _, text, range)
-	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-	vimdoc.insert({
-		class = "vimdoc_inline_code",
-		after = after:match("^	+"),
-
-		text = text,
-		range = range
-	});
-end
-
-vimdoc.code_block = function (buffer, TSNode, text, range)
-	local first_child = TSNode:named_child(0);
-	local language;
-
-	if first_child:type() == "language" then
-		language = vim.treesitter.get_node_text(first_child, buffer):gsub("^%>", "");
-	end
-
-	local use_virt_line = false;
-
-	if range.col_start ~= 0 then
-		local before = vim.api.nvim_buf_get_text(buffer, range.row_start, 0, range.row_start, range.col_start, {})[1] or "";
-
-		if before:match("%S") then
-			use_virt_line = true;
-		end
-	end
-
-	vimdoc.insert({
-		class = "vimdoc_code_block",
-		language = language,
-		use_virt_line = use_virt_line,
-
-		text = text,
-		range = range
-	});
-end
-
-vimdoc.modeline = function (buffer, TSNode, text, range)
 	local options = {};
 	local modeline = text[1]:gsub("^vim%:", ""):gsub("^vi%:", ""):gsub("^ex%:", "");
 	modeline = modeline:gsub("%s", ":");
@@ -720,9 +325,127 @@ vimdoc.modeline = function (buffer, TSNode, text, range)
 		text = text,
 		range = range
 	});
+
+	---_
 end
 
---- YAML parser.
+--- Notes.
+---@param buffer integer
+---@param TSNode table
+---@param text string[]
+---@param range node.range
+vimdoc.note = function (buffer, TSNode, text, range)
+	---+
+
+	local parent = TSNode:parent();
+	local types = { "tag", "taglink", "optionlink", "argument", "codespan" };
+
+	while parent do
+		if vim.list_contains(types, parent:type()) then
+			return;
+		end
+
+		parent = parent:parent();
+	end
+
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	vimdoc.insert({
+		class = "vimdoc_note",
+		label = text[1]:gsub("%|", ""),
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
+
+	---_
+end
+
+--- Option link.
+---@param buffer integer
+---@param text string[]
+---@param range node.range
+vimdoc.optionlink = function (buffer, _, text, range)
+	---+
+
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	vimdoc.insert({
+		class = "vimdoc_optionlink",
+		label = text[1]:gsub("%|", ""),
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
+
+	---_
+end
+
+--- Help tag.
+---@param buffer integer
+---@param text string[]
+---@param range node.range
+vimdoc.tag = function (buffer, _, text, range)
+	---+
+
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	vimdoc.insert({
+		class = "vimdoc_tag",
+		tag = text[1]:gsub("%*", ""),
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
+
+	---_
+end
+
+--- Link to a help tag.
+---@param buffer integer
+---@param text string[]
+---@param range node.range
+vimdoc.taglink = function (buffer, _, text, range)
+	---+
+
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	vimdoc.insert({
+		class = "vimdoc_taglink",
+		label = text[1]:gsub("%|", ""),
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
+
+	---_
+end
+
+--- Word processor.
+---@param text string[]
+---@param range node.range
+vimdoc.word = function (_, _, text, range)
+	---+
+
+	if vim.fn.hlexists(text[1]) then
+		--- Highlight group name.
+		vimdoc.insert({
+			class = "vimdoc_hl",
+			group_name = text[1],
+
+			text = text,
+			range = range
+		});
+	end
+
+	---_
+end
+
+--- Vimdoc parser.
 ---@param buffer integer
 ---@param TSTree table
 ---@param from integer?
@@ -745,8 +468,10 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 		  (column_heading)
 			]@vimdoc.heading_no_delim)
 
-		((word) @vimdoc.word
-			(#match? @vimdoc.word "^\\w\\+$"))
+		(line
+			.
+			(word) @vimdoc.word
+			(#match? @vimdoc.word "^\\w+$"))
 
 		((tag) @vimdoc.tag)
 
@@ -806,15 +531,12 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 				col_end = c_end
 			}
 		);
-		-- if error then
-		-- 	vim.print(error)
-		-- end
 
 		if success == false then
-			-- require("markview.health").notify("trace", {
-			-- 	level = 4,
-			-- 	message = error
-			-- });
+			require("helpview.health").notify("trace", {
+				level = 4,
+				message = error
+			});
 		end
 
 	    ::continue::
