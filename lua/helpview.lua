@@ -222,7 +222,7 @@ helpview.render = function (buffer, state)
 
 	helpview.clear(buffer);
 
-	if line_count >= line_limit then
+	if line_count <= line_limit then
 		if is_hybrid_mode() == true and linewise == false then
 			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
 				local cursor = vim.api.nvim_win_get_cursor(win);
@@ -299,6 +299,7 @@ helpview.render = function (buffer, state)
 					math.min(line_count, cursor[1] + edit_range[1])
 				);
 			else
+				renderer.clear(buffer, renderer.get_range(content));
 				renderer.render(buffer, content);
 			end
 		end

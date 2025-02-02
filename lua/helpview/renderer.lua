@@ -1,5 +1,5 @@
 local renderer = {};
--- local health = require("markview.health");
+local health = require("helpview.health");
 
 renderer.vimdoc = require("helpview.renderers.vimdoc");
 
@@ -339,15 +339,15 @@ end
 
 renderer.clear = function (buffer, from, to)
 	local langs = { "vimdoc" };
-	-- local start = vim.uv.hrtime();
+	local start = vim.uv.hrtime();
 
-	-- ---+${lua, Announce start of clearing}
-	-- health.notify("trace", {
-	-- 	level = 1,
-	-- 	message = string.format("Clearing: %d", buffer)
-	-- });
-	-- health.__child_indent_in();
-	-- ---_
+	---+${lua, Announce start of clearing}
+	health.notify("trace", {
+		level = 1,
+		message = string.format("Clearing: %d", buffer)
+	});
+	health.__child_indent_in();
+	---_
 
 	for _, lang in ipairs(langs) do
 		if renderer[lang] then
@@ -355,15 +355,45 @@ renderer.clear = function (buffer, from, to)
 		end
 	end
 
-	-- ---+${lua, Announce end of clearing}
-	-- local now = vim.uv.hrtime();
-	--
-	-- health.__child_indent_de();
-	-- health.notify("trace", {
-	-- 	level = 3,
-	-- 	message = string.format("Clearing(end, %dms): %d", (now - start) / 1e6, buffer)
-	-- });
-	-- ---_
+	---+${lua, Announce end of clearing}
+	local now = vim.uv.hrtime();
+
+	health.__child_indent_de();
+	health.notify("trace", {
+		level = 3,
+		message = string.format("Clearing(end, %dms): %d", (now - start) / 1e6, buffer)
+	});
+	---_
+end
+
+--- Gets the range of the given content.
+---@param content table[]
+---@return integer
+---@return integer
+renderer.get_range = function (content)
+	---+
+
+	local from, to = nil, nil;
+
+	for _, item in ipairs(content) do
+		local range = item.range;
+
+		if not from then
+			from = range.row_start;
+		elseif range.row_start < from then
+			from = range.row_start;
+		end
+
+		if not to then
+			to = toe.row_end;
+		elseif range.row_end > from then
+			to = toe.row_end;
+		end
+	end
+
+	return from, to;
+
+	---_
 end
 
 return renderer;
