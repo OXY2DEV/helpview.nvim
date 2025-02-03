@@ -741,6 +741,64 @@ local get_complete_items = {
 	end
 };
 
+vim.api.nvim_create_user_command("Help", function (cmd)
+	helpview.help:open(cmd.fargs[1])
+end, {
+	---+
+
+	desc = "Fancy :help",
+	nargs = "?",
+
+	complete = function (_, cmd, cursorpos)
+		local before = string.sub(cmd, 0, cursorpos):gsub("^Help%s*", "");
+
+		local parts = {};
+
+		for part in string.gmatch(before, "%S+") do
+			table.insert(parts, part);
+		end
+
+		if #parts > 1 then
+			return {};
+		elseif before:match("%s$") then
+			return {};
+		else
+			return vim.fn.getcompletion(parts[1] or "", "help", vim.o.wildignore);
+		end
+	end
+
+	---_
+});
+
+vim.api.nvim_create_user_command("H", function (cmd)
+	helpview.help:open(cmd.fargs[1])
+end, {
+	---+
+
+	desc = "Fancy :help",
+	nargs = "?",
+
+	complete = function (_, cmd, cursorpos)
+		local before = string.sub(cmd, 0, cursorpos):gsub("^Help%s*", "");
+
+		local parts = {};
+
+		for part in string.gmatch(before, "%S+") do
+			table.insert(parts, part);
+		end
+
+		if #parts > 1 then
+			return {};
+		elseif before:match("%s$") then
+			return {};
+		else
+			return vim.fn.getcompletion(parts[1] or "", "help", vim.o.wildignore);
+		end
+	end
+
+	---_
+});
+
 --- User command.
 vim.api.nvim_create_user_command("Helpview", function (cmd)
 	---+${lua}

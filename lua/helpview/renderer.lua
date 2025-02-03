@@ -375,19 +375,21 @@ renderer.get_range = function (content)
 
 	local from, to = nil, nil;
 
-	for _, item in ipairs(content) do
-		local range = item.range;
+	for lang, lang_items in pairs(content) do
+		for _, item in ipairs(lang_items) do
+			local range = item.range;
 
-		if not from then
-			from = range.row_start;
-		elseif range.row_start < from then
-			from = range.row_start;
-		end
+			if not from then
+				from = range.row_start;
+			elseif range.row_start < from then
+				from = range.row_start;
+			end
 
-		if not to then
-			to = toe.row_end;
-		elseif range.row_end > from then
-			to = toe.row_end;
+			if not to then
+				to = range.row_end;
+			elseif range.row_end > from then
+				to = range.row_end;
+			end
 		end
 	end
 

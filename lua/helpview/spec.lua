@@ -8,7 +8,7 @@ spec.default = {
 
 	preview = {
 		-- enable = false,
-		modes = { "n" },
+		modes = { "n", "c", "no" },
 		max_buf_lines = 500,
 
 		filetypes = { "help" },

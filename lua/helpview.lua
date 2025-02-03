@@ -193,24 +193,33 @@ end
 helpview.render = function (buffer, state)
 	---+${lua}
 
+	---@type integer
+	buffer = buffer or vim.api.nvim_get_current_buf();
+
 	local parser = require("helpview.parser");
 	local renderer = require("helpview.renderer");
 
-	buffer = buffer or vim.api.nvim_get_current_buf();
-
+	---@type integer Number of lines a buffer can have to be fully rendered.
 	local line_limit = spec.get({ "preview", "max_buf_lines" }, { fallback = 1000, ignore_enable = true });
+	---@type [ integer, integer ] Number of lines to draw on large buffers.
 	local draw_range = spec.get({ "preview", "draw_range" }, { fallback = { vim.o.lines, vim.o.lines }, ignore_enable = true });
+	---@type [ integer, integer ] Number of lines to be considered being edited.
 	local edit_range = spec.get({ "preview", "edit_range" }, { fallback = { 1, 0 }, ignore_enable = true });
 
-	local hybrid_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
-	local linewise = spec.get({ "preview", "linewise_hybrid_mode" }, { fallback = false, ignore_enable = true });
-
+	---@type integer Buffer's line count.
 	local line_count = vim.api.nvim_buf_line_count(buffer);
+
+	---@type string[] List of modes where to use hybrid_mode.
+	local hybrid_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
+	---@type boolean Is line-wise hybrid mode enabled?
+	local linewise_hybrid_mode = spec.get({ "preview", "linewise_hybrid_mode" }, { fallback = false, ignore_enable = true })
+
+	---@type string Current mode shorthand.
 	local mode = vim.api.nvim_get_mode().mode;
 
-	state = state or helpview.state.buffer_states[buffer] or {};
+	state = state or helpview.state.buffer_states[buffer];
 
-	local function is_hybrid_mode ()
+	local function hybrid_mode()
 		if type(state) == "table" and state.hybrid_mode == false then
 			return false;
 		else
@@ -218,85 +227,64 @@ helpview.render = function (buffer, state)
 		end
 	end
 
-	local content;
-
 	helpview.clear(buffer);
 
 	if line_count <= line_limit then
-		if is_hybrid_mode() == true and linewise == false then
-			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
-				local cursor = vim.api.nvim_win_get_cursor(win);
-				cursor[1] = cursor[1] - 1;
+		local content, _ = parser.parse(buffer, 0, -1);
 
-				content, _ = parser.init(
-					buffer,
-					math.max(0, cursor[1] - draw_range[1]),
-					math.min(line_count, cursor[1] + draw_range[1])
-				);
+		if hybrid_mode() == true and linewise_hybrid_mode == false then
+			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+				---@type [ integer, integer ] Cursor position.
+				local cursor = vim.api.nvim_win_get_cursor(win);
+				--- 1-index → 0-index
+				cursor[1] = cursor[1] - 1;
 
 				content = renderer.filter(content, nil, {
 					math.max(0, cursor[1] - edit_range[1]),
-					math.min(line_count, cursor[1] + edit_range[1]),
+					math.min(cursor[1] + edit_range[2], line_count)
 				});
 			end
 
 			renderer.render(buffer, content);
-		elseif is_hybrid_mode() == true then
+		elseif hybrid_mode() == true then
 			renderer.render(buffer, content);
 
 			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+				---@type [ integer, integer ] Cursor position.
 				local cursor = vim.api.nvim_win_get_cursor(win);
+				--- 1-index → 0-index
 				cursor[1] = cursor[1] - 1;
-
-				content, _ = parser.init(
-					buffer,
-					math.max(0, cursor[1] - draw_range[1]),
-					math.min(line_count, cursor[1] + draw_range[1])
-				);
 
 				renderer.clear(buffer,
 					math.max(0, cursor[1] - edit_range[1]),
-					math.min(line_count, cursor[1] + edit_range[1])
+					math.min(cursor[1] + 1 + edit_range[2], line_count)
 				);
 			end
 		else
-			for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
-				local cursor = vim.api.nvim_win_get_cursor(win);
-				cursor[1] = cursor[1] - 1;
-
-				content, _ = parser.init(
-					buffer,
-					math.max(0, cursor[1] - draw_range[1]),
-					math.min(line_count, cursor[1] + draw_range[1])
-				);
-
-				renderer.render(buffer, content);
-			end
+			renderer.render(buffer, content);
 		end
 	else
 		for _, win in ipairs(vim.fn.win_findbuf(buffer)) do
+			---@type [ integer, integer ] Cursor position.
 			local cursor = vim.api.nvim_win_get_cursor(win);
+			--- 1-index → 0-index
 			cursor[1] = cursor[1] - 1;
 
-			content, _ = parser.init(
-				buffer,
-				0,
-				-1
-			);
+			local content, _ = parser.parse(buffer, math.max(0, cursor[1] - draw_range[1]), math.min(line_count, cursor[1] + draw_range[2]));
 
-			if is_hybrid_mode() == true and linewise == false then
+			if hybrid_mode() == true and linewise_hybrid_mode == false then
 				content = renderer.filter(content, nil, {
 					math.max(0, cursor[1] - edit_range[1]),
-					math.min(line_count, cursor[1] + edit_range[1]),
+					math.min(cursor[1] + edit_range[2], line_count)
 				});
 
 				renderer.render(buffer, content);
-			elseif is_hybrid_mode() == true then
+			elseif hybrid_mode() == true then
 				renderer.render(buffer, content);
 
 				renderer.clear(buffer,
 					math.max(0, cursor[1] - edit_range[1]),
-					math.min(line_count, cursor[1] + edit_range[1])
+					math.min(cursor[1] + 1 + edit_range[2], line_count)
 				);
 			else
 				renderer.clear(buffer, renderer.get_range(content));
@@ -304,7 +292,6 @@ helpview.render = function (buffer, state)
 			end
 		end
 	end
-
 	---_
 end
 
@@ -1098,9 +1085,211 @@ helpview.commands = {
 	---_
 };
 
+--- Wrapper for `:help`.
+helpview.help = {
+	---+
+
+	---@type integer Overlay buffer.
+	overlay_buffer = nil,
+	---@type integer Preview buffer.
+	preview_buffer = nil,
+
+	---@type integer Overlay window.
+	overlay_window = nil,
+	---@type integer Preview window.
+	preview_window = nil,
+
+	---@type integer Window leave autocmd.
+	leave_autocmd = nil,
+	---@type integer Window resize autocmd.
+	resize_autocmd = nil,
+
+	--- Sets up the needed buffers/windows/autocmds.
+	---@param self table
+	---@param overlay_opts table
+	---@param preview_opts table
+	__setup = function (self, overlay_opts, preview_opts)
+		---+
+
+		if type(preview_opts.split) == "string" then
+			goto no_overlay;
+		end
+
+		if helpview.buf_is_safe(self.overlay_buffer) == false then
+			pcall(vim.api.nvim_buf_delete, self.overlay_buffer, true);
+			self.overlay_buffer = vim.api.nvim_create_buf(false, true);
+		end
+
+		if helpview.win_is_safe(self.overlay_window) == false then
+			pcall(vim.api.nvim_win_close, self.overlay_window, { force = true });
+			self.overlay_window = vim.api.nvim_open_win(self.overlay_buffer, false, overlay_opts);
+
+			vim.wo[self.overlay_window].cursorline = false;
+			vim.wo[self.overlay_window].cursorcolumn = false;
+		else
+			vim.api.nvim_win_set_config(self.overlay_window, overlay_opts);
+		end
+
+		::no_overlay::
+
+		if helpview.buf_is_safe(self.preview_buffer) == false then
+			pcall(vim.api.nvim_buf_delete, self.preview_buffer, true);
+			self.preview_buffer = vim.api.nvim_create_buf(false, true);
+
+			vim.bo[self.preview_buffer].ft = "help";
+			vim.bo[self.preview_buffer].bt = "help";
+
+			self.leave_autocmd = vim.api.nvim_create_autocmd({ "WinClosed" }, {
+				callback = function (ev)
+					local emitted_from = tonumber(ev.match);
+
+					if emitted_from ~= self.preview_window then
+						return;
+					end
+
+					self:close()
+				end
+			});
+		end
+
+		if helpview.win_is_safe(self.preview_window) == false then
+			pcall(vim.api.nvim_win_close, self.preview_window, { force = true });
+			self.preview_window = vim.api.nvim_open_win(self.preview_buffer, true, preview_opts);
+		else
+			vim.api.nvim_win_set_config(self.preview_window, preview_opts);
+		end
+
+		---_
+	end,
+
+	--- Closes help window.
+	---@param self table
+	close = function (self)
+		---+
+
+		pcall(vim.api.nvim_del_autocmd, self.leave_autocmd);
+		pcall(vim.api.nvim_del_autocmd, self.resize_autocmd);
+
+		pcall(vim.api.nvim_win_close, self.overlay_window, { force = true });
+		pcall(vim.api.nvim_win_close, self.preview_window, { force = true });
+
+		---_
+	end,
+
+	--- Opens help window
+	open = function (self, tag)
+		---+
+
+		tag = tag or "";
+
+		local overlay_opts = spec.get({ "preview", "overlay_winopts" }, { fallback = {} });
+		local preview_opts = spec.get({ "preview", "preview_winopts" }, { fallback = {} });
+
+		local function get_size()
+			local w = preview_opts.width or 78;
+			local h = preview_opts.height or vim.o.lines - vim.o.cmdheight;
+
+			if w <= 1 then
+				w = math.floor(w * vim.o.columns);
+			end
+
+			if h <= 1 then
+				h = math.floor(h * vim.o.lines);
+			end
+
+			return w, h;
+		end
+
+		local dimensions = { get_size() };
+
+		if type(preview_opts.split) == "string" then
+			self:__setup(
+				overlay_opts,
+				vim.tbl_extend("force", preview_opts, {
+					width = dimensions[1],
+					height = dimensions[2]
+				})
+			);
+		else
+			self:__setup(
+				vim.tbl_extend("force", overlay_opts, {
+					relative = "editor",
+					zindex = 5,
+
+					row = 0,
+					col = 0,
+
+					width = vim.o.columns,
+					height = vim.o.lines - vim.o.cmdheight,
+
+					focusable = false,
+					style = "minimal"
+				}),
+				vim.tbl_extend("force", preview_opts, {
+					relative = "editor",
+					zindex = 6,
+
+					row = math.ceil(((vim.o.lines - vim.o.cmdheight) - dimensions[2]) / 2),
+					col = math.ceil((vim.o.columns - dimensions[1]) / 2),
+
+					width = dimensions[1],
+					height = dimensions[2]
+				})
+			);
+		end
+
+		self.resize_autocmd = vim.api.nvim_create_autocmd({ "VimResized" }, {
+			callback = function ()
+				local new_dimensions = { get_size() };
+
+				self:__setup(
+					vim.tbl_extend("force", overlay_opts, {
+						relative = "editor",
+						zindex = 5,
+
+						row = 0,
+						col = 0,
+
+						width = vim.o.columns,
+						height = vim.o.lines - vim.o.cmdheight,
+
+						focusable = false,
+						style = "minimal"
+					}),
+					vim.tbl_extend("force", preview_opts, {
+						relative = "editor",
+						zindex = 6,
+
+						row = math.ceil(((vim.o.lines - vim.o.cmdheight) - new_dimensions[2]) / 2),
+						col = math.ceil((vim.o.columns - new_dimensions[1]) / 2),
+
+						width = new_dimensions[1],
+						height = new_dimensions[2]
+					})
+				);
+			end
+		});
+
+		helpview.actions.__exec_callback("on_help_open", self.preview_buffer, self.preview_window, self.overlay_preview, self.overlay_window);
+
+		vim.cmd("help " .. tag);
+
+		helpview.actions.attach(self.preview_buffer);
+		helpview.render(self.preview_buffer);
+
+		---_
+	end
+
+	---_
+};
+
 --- Setup function.
----@param user_config? table
+---@param user_config? helpview.config
 helpview.setup = function (user_config)
+	if user_config == nil then
+		return;
+	end
+
 	require("helpview.spec").setup(user_config);
 end
 
