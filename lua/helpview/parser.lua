@@ -1,5 +1,5 @@
 local parser = {};
--- local health = require("markview.health");
+local health = require("helpview.health");
 
 parser.vimdoc = require("helpview.parsers.vimdoc");
 
@@ -57,11 +57,10 @@ parser.sorted = {};
 ---@param buffer number
 ---@param from integer?
 ---@param to integer?
----@param cache boolean?
 ---
 ---@return table
 ---@return table
-parser.init = function (buffer, from, to, cache)
+parser.init = function (buffer, from, to)
 	-- Clear the previous contents
 	parser.content = {};
 	parser.sorted = {};
@@ -76,13 +75,13 @@ parser.init = function (buffer, from, to, cache)
 
 	---+${lua, Announce start of parsing}
 	---@type integer Start time
-	-- local start = vim.uv.hrtime();
-	--
-	-- health.notify("trace", {
-	-- 	level = 1,
-	-- 	message = string.format("Parsing(start): %d", buffer)
-	-- });
-	-- health.__child_indent_in();
+	local start = vim.uv.hrtime();
+
+	health.notify("trace", {
+		level = 1,
+		message = string.format("Parsing(start): %d", buffer)
+	});
+	health.__child_indent_in();
 	---_
 
     vim.treesitter.get_parser(buffer):parse(true);
@@ -105,14 +104,15 @@ parser.init = function (buffer, from, to, cache)
 
 	---+${lua, Announce end of parsing}
 	---@type integer End time
-	-- local now = vim.uv.hrtime();
-	--
-	-- health.__child_indent_de();
-	-- health.notify("trace", {
-	-- 	level = 3,
-	-- 	message = string.format("Parsing(end, %dms): %d", (now - start) / 1e6, buffer)
-	-- });
+	local now = vim.uv.hrtime();
+
+	health.__child_indent_de();
+	health.notify("trace", {
+		level = 3,
+		message = string.format("Parsing(end, %dms): %d", (now - start) / 1e6, buffer)
+	});
 	---_
+
 	return parser.content, parser.sorted;
 end
 

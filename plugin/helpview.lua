@@ -28,7 +28,16 @@ health.notify("trace", {
 vim.api.nvim_create_autocmd({ "ColorScheme" }, {
 	group = helpview.au,
 	callback = function ()
+		---+
+
 		require("helpview.highlights").setup();
+
+		health.notify("trace", {
+			level = 5,
+			message = "Updated highlight groups"
+		});
+
+		---_
 	end
 });
 

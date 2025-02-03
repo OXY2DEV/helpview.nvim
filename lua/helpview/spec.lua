@@ -97,6 +97,10 @@ spec.default = {
 			}
 		},
 
+		highlight_groups = {
+			enable = true
+		},
+
 		tags = {
 			default = {
 				hl = "Tag",

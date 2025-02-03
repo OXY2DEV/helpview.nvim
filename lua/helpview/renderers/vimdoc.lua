@@ -117,6 +117,7 @@ end
 vimdoc.code_block = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.code_blocks
 	local config = spec.get({ "vimdoc", "code_blocks" });
 	local range = item.range;
 
@@ -125,6 +126,7 @@ vimdoc.code_block = function (buffer, item)
 	end
 
 	local function get_line_config (line)
+		---@type { block_hl: string }
 		local line_config;
 
 		if not item.language then
@@ -243,6 +245,7 @@ end
 vimdoc.heading = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.headings?
 	local main_config = spec.get({ "vimdoc", "headings" });
 
 	if not main_config then
@@ -251,6 +254,7 @@ vimdoc.heading = function (buffer, item)
 		return;
 	end
 
+	---@type headings.opts
 	local config = main_config["heading_" .. item.level];
 	local range = item.range;
 
@@ -270,6 +274,8 @@ vimdoc.heading = function (buffer, item)
 			{ label[2], utils.set_hl(label_hl[2]) },
 		},
 
+		--- Bug, Causes highlight groups to
+		--- bleed out in certain cases.
 		-- hl_mode = "combine"
 	});
 
@@ -290,6 +296,7 @@ end
 vimdoc.heading_no_delim = function (buffer, item)
 	---+
 
+	---@type vimdoc.headings?
 	local main_config = spec.get({ "vimdoc", "headings" });
 
 	if not main_config then
@@ -298,6 +305,7 @@ vimdoc.heading_no_delim = function (buffer, item)
 		return;
 	end
 
+	---@type headings.opts
 	local config = main_config["heading_" .. item.level];
 	local range = item.range;
 
@@ -344,12 +352,40 @@ end
 vimdoc.hl = function (buffer, item)
 	---+
 
-	local range = item.range;
+	---@type vimdoc.highlights?
 	local config = spec.get({ "vimdoc", "highlight_groups" });
+	local range = item.range;
 
 	if not config then
 		return;
 	end
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl or item.group_name) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl or item.group_name) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl or item.group_name) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl or item.group_name) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl or item.group_name) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
 
 	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
 		undo_restore = false, invalidate = true,
@@ -364,8 +400,8 @@ end
 vimdoc.hr = function (buffer, item)
 	---+${lua}
 
-	local range = item.range;
 	local config = spec.get({ "vimdoc", "horizontal_rules" });
+	local range = item.range;
 
 	if not config then
 		return;
@@ -387,8 +423,12 @@ vimdoc.hr = function (buffer, item)
 
 	for _, part in ipairs(config.parts or {}) do
 		if part.type == "text" then
+			---@cast part hr.text
+
 			table.insert(_v, { part.text, utils.set_hl(part.hl) });
 		elseif part.type == "repeating" then
+			---@cast part hr.repeating
+
 			local rep = part.repeat_amount or 0;
 
 			if type(rep) == "function" then
@@ -396,7 +436,7 @@ vimdoc.hr = function (buffer, item)
 			end
 
 			local hl_rep = part.repeat_hl or false;
-			local txt_rep = part.text_repeat or false;
+			local txt_rep = part.repeat_text or false;
 
 			for r = 1, rep, 1 do
 				if part.direction == "right" then
@@ -428,6 +468,7 @@ end
 vimdoc.inline_code = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.inlinw_codes?
 	local config = spec.get({ "vimdoc", "inline_codes" });
 	local range = item.range;
 
@@ -481,12 +522,14 @@ end
 vimdoc.keycode = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.keycodes?
 	local main_config = spec.get({ "vimdoc", "keycodes" });
 
 	if not main_config then
 		return;
 	end
 
+	---@type vimdoc.generic?
 	local config = utils.match(main_config, item.label, {});
 	local range = item.range;
 
@@ -548,6 +591,7 @@ end
 vimdoc.modeline = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.modeline?
 	local config = spec.get({ "vimdoc", "modelines" });
 	local range = item.range;
 
@@ -624,12 +668,14 @@ end
 vimdoc.note = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.notes?
 	local main_config = spec.get({ "vimdoc", "notes" });
 
 	if not main_config then
 		return;
 	end
 
+	---@type vimdoc.generic?
 	local config = utils.match(main_config, item.label, {});
 	local range = item.range;
 
@@ -679,12 +725,14 @@ end
 vimdoc.optionlink = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.optionlinks?
 	local main_config = spec.get({ "vimdoc", "optionlinks" });
 
 	if not main_config then
 		return;
 	end
 
+	---@type vimdoc.generic?
 	local config = utils.match(main_config, item.label, {});
 	local range = item.range;
 
@@ -746,12 +794,14 @@ end
 vimdoc.tag = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.tags?
 	local main_config = spec.get({ "vimdoc", "tags" });
 
 	if not main_config then
 		return;
 	end
 
+	---@type vimdoc.generic?
 	local config = utils.match(main_config, item.tag, {});
 	local range = item.range;
 
@@ -817,12 +867,14 @@ end
 vimdoc.taglink = function (buffer, item)
 	---+${lua}
 
+	---@type vimdoc.taglinks?
 	local main_config = spec.get({ "vimdoc", "taglinks" });
 
 	if not main_config then
 		return;
 	end
 
+	---@type vimdoc.generic?
 	local config = utils.match(main_config, item.label, {});
 	local range = item.range;
 
@@ -886,14 +938,22 @@ vimdoc.taglink = function (buffer, item)
 end
 
 vimdoc.render = function (buffer, content)
+	---+
+
 	vimdoc.lnum_offsets = {};
 
 	for _, item in ipairs(content or {}) do
-		local _, err = pcall(vimdoc[item.class:gsub("^vimdoc%_", "")], buffer, item);
-		if err then
-			vim.print(err);
+		local success, error = pcall(vimdoc[item.class:gsub("^vimdoc%_", "")], buffer, item);
+
+		if success == false then
+			require("helpview.health").notify("trace", {
+				level = 4,
+				message = error
+			});
 		end
 	end
+
+	---_
 end
 
 vimdoc.clear = function (buffer, from, to)

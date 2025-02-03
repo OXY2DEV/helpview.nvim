@@ -471,7 +471,7 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 		(line
 			.
 			(word) @vimdoc.word
-			(#match? @vimdoc.word "^\\w+$"))
+			(#match? @vimdoc.word "^[a-zA-Z0-9l_\.@\-]*$"))
 
 		((tag) @vimdoc.tag)
 
