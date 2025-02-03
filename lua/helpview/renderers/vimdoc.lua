@@ -41,6 +41,8 @@ vimdoc.__fix_indent = function (buffer, item, offset)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__argument
 vimdoc.argument = function (buffer, item)
 	---+${lua}
 
@@ -114,6 +116,8 @@ vimdoc.argument = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__code_block
 vimdoc.code_block = function (buffer, item)
 	---+${lua}
 
@@ -242,6 +246,8 @@ vimdoc.code_block = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__heading
 vimdoc.heading = function (buffer, item)
 	---+${lua}
 
@@ -293,6 +299,8 @@ vimdoc.heading = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__heading
 vimdoc.heading_no_delim = function (buffer, item)
 	---+
 
@@ -349,6 +357,8 @@ vimdoc.heading_no_delim = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__hl
 vimdoc.hl = function (buffer, item)
 	---+
 
@@ -397,6 +407,8 @@ vimdoc.hl = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__hr
 vimdoc.hr = function (buffer, item)
 	---+${lua}
 
@@ -465,6 +477,8 @@ vimdoc.hr = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__inline_code
 vimdoc.inline_code = function (buffer, item)
 	---+${lua}
 
@@ -519,6 +533,8 @@ vimdoc.inline_code = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__keycode
 vimdoc.keycode = function (buffer, item)
 	---+${lua}
 
@@ -588,6 +604,8 @@ vimdoc.keycode = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__modeline
 vimdoc.modeline = function (buffer, item)
 	---+${lua}
 
@@ -665,6 +683,8 @@ vimdoc.modeline = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__note
 vimdoc.note = function (buffer, item)
 	---+${lua}
 
@@ -722,6 +742,8 @@ vimdoc.note = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__optionlink
 vimdoc.optionlink = function (buffer, item)
 	---+${lua}
 
@@ -791,6 +813,8 @@ vimdoc.optionlink = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__tag
 vimdoc.tag = function (buffer, item)
 	---+${lua}
 
@@ -864,6 +888,8 @@ vimdoc.tag = function (buffer, item)
 	---_
 end
 
+---@param buffer integer
+---@param item vimdoc.__taglink
 vimdoc.taglink = function (buffer, item)
 	---+${lua}
 
@@ -937,6 +963,9 @@ vimdoc.taglink = function (buffer, item)
 	---_
 end
 
+--- Renders content.
+---@param buffer integer
+---@param content table
 vimdoc.render = function (buffer, content)
 	---+
 

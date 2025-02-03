@@ -33,6 +33,7 @@ vimdoc.argument = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__argument
 	vimdoc.insert({
 		class = "vimdoc_argument",
 		label = text[1]:gsub("[%{%}]", ""),
@@ -90,6 +91,7 @@ vimdoc.code_block = function (buffer, TSNode, text, range)
 		end
 	end
 
+	---@type vimdoc.__code_block
 	vimdoc.insert({
 		class = "vimdoc_code_block",
 		language = language,
@@ -108,7 +110,7 @@ end
 ---@param buffer integer
 ---@param TSNode table
 ---@param text string[]
----@param range node.range
+---@param range heading.range
 vimdoc.heading = function (buffer, TSNode, text, range)
 	---+${lua}
 
@@ -142,7 +144,6 @@ vimdoc.heading = function (buffer, TSNode, text, range)
 	local desc, tags = "", {};
 
 	if text[2]:match("%*.+%*") then
-		--- *tags* hijdjdjd 
 		local tmp = text[2];
 
 		for tag in text[2]:gmatch("%*%S+%*") do
@@ -172,6 +173,7 @@ vimdoc.heading = function (buffer, TSNode, text, range)
 		range.desc_end = #text[2];
 	end
 
+	---@type vimdoc.__heading
 	vimdoc.insert({
 		class = "vimdoc_heading",
 		level = text[1]:match("%-") and 2 or 1,
@@ -188,7 +190,7 @@ end
 
 --- Level 3/4 headings.
 ---@param text string[]
----@param range node.range
+---@param range heading.range
 vimdoc.heading_no_delim = function (_, _, text, range)
 	---+
 
@@ -200,6 +202,7 @@ vimdoc.heading_no_delim = function (_, _, text, range)
 		return;
 	end
 
+	---@type vimdoc.__heading
 	vimdoc.insert({
 		class = "vimdoc_heading_no_delim",
 		level = text[1]:match("%~$") and 4 or 3,
@@ -217,6 +220,7 @@ end
 vimdoc.hr = function (_, _, text, range)
 	---+
 
+	---@type vimdoc.__hr
 	vimdoc.insert({
 		class = "vimdoc_hr",
 
@@ -236,6 +240,7 @@ vimdoc.inline_code = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__inline_code
 	vimdoc.insert({
 		class = "vimdoc_inline_code",
 		after = after:match("^	+"),
@@ -256,6 +261,7 @@ vimdoc.keycode = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__keycode
 	vimdoc.insert({
 		class = "vimdoc_keycode",
 		label = text[1]:gsub("%|", ""),
@@ -318,6 +324,7 @@ vimdoc.modeline = function (_, _, text, range)
 		});
 	end
 
+	---@type vimdoc.__modeline
 	vimdoc.insert({
 		class = "vimdoc_modeline",
 		options = options,
@@ -350,6 +357,7 @@ vimdoc.note = function (buffer, TSNode, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__note
 	vimdoc.insert({
 		class = "vimdoc_note",
 		label = text[1]:gsub("%|", ""),
@@ -371,6 +379,7 @@ vimdoc.optionlink = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__optionlink
 	vimdoc.insert({
 		class = "vimdoc_optionlink",
 		label = text[1]:gsub("%|", ""),
@@ -392,6 +401,7 @@ vimdoc.tag = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__tag
 	vimdoc.insert({
 		class = "vimdoc_tag",
 		tag = text[1]:gsub("%*", ""),
@@ -413,6 +423,7 @@ vimdoc.taglink = function (buffer, _, text, range)
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	---@type vimdoc.__taglink
 	vimdoc.insert({
 		class = "vimdoc_taglink",
 		label = text[1]:gsub("%|", ""),
@@ -432,7 +443,7 @@ vimdoc.word = function (_, _, text, range)
 	---+
 
 	if vim.fn.hlexists(text[1]) then
-		--- Highlight group name.
+		---@type vimdoc.__hl
 		vimdoc.insert({
 			class = "vimdoc_hl",
 			group_name = text[1],
