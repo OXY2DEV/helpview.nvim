@@ -1,75 +1,125 @@
-# Helpview.nvim
+# 🧊 Helpview.nvim
 
 <p align="center">
-    Decorations for <code>vimdoc/help</code> files in Neovim.
+    A hackable & <i>fancy</i> vimdoc viewer for <code>Neovim</code>.
 </p>
 
-![hybrid_mode](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_hybrid_mode.gif)
-![demo_mobile](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_demo_mobile.jpg)
-![demo_2](https://github.com/OXY2DEV/helpview.nvim/blob/images/Main/helpview_demo_1.jpg)
+<!-- Images here -->
 
-## Features
+## 📖 Table of contents
 
-Helpview provides quite a few features such as,
+- [✨ Features](#-features)
+- [📚 Requirements](#-requirements)
+- [📐 Installation](#-installation)
+- [🧭 Configuration](#-configuration)
 
-- Provides decorations for various vimdoc elements such as,
-  * Titles
-  * Headings
-  * Tags
-  * Tag links
-  * Option links
-  * Attributes
-  * Highlight group name(names surrounded with `$`).
-  * Horizontal rules
-  * Code blocks etc.
-- Hybrid mode for previewing and editing together.
-- Highly performant even on very large files.
-- Dynamic highlight groups!
+- [🎇 Commands](#-commands)
+- [🎨 Highlight groups](#-highlight-groups)
 
-And a lot more to come.
+## ✨ Features
 
-## Requirements
+- Adds various decorations to make `vimdoc` files *nicer* to look at.
+- No external dependencies(other than the `vimdoc` parser)!
+- Supports a variety of vimdoc syntaxes such as,
 
-- Neovim version 0.10.0 or higher.
-- Treesitter parser for `vimdoc`(install it via `:TSInstall vimdoc` if you use `nvim-treesitter`).
+    + Arguments.
+    + Code blocks.
+    + Headings(& column headings).
+    + Highlight group names.
+    + Horizontal rules.
+    + Inline codes.
+    + Keycodes.
+    + Vim modeline.
+    + Notes.
+    + Option links.
+    + Tags.
+    + Tag links.
 
-## Installation
+- Custom renderer support.
+- *Dynamic* highlight groups.
+- Hybrid mode for viewing & writing together.
+- Splitview for side-by-side viewing of the file being edited.
+- Custom help command(`:Help`, `:H`)
+
+## 📚 Requirements
+
+System,
+
+- **Neovim:** 0.10.3
+
+---
+
+Colorscheme,
+
+- Any *tree-sitter* based colorscheme is recommended.
+
+External icon providers,
+
+>[!NOTE]
+> You need to change the config to use the desired icon provider.
+> 
+> ```lua
+> {
+>     preview = {
+>         icon_provider = "internal", -- "mini" or "devicons"
+>     }
+> }
+> ```
+
+- [mini.icons](https://github.com/echasnovski/mini.icons)
+- [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons)
+
+Parsers,
+
+>[!TIP]
+> You can use `nvim-treesitter` to easily install parsers. You can install all the parsers with the following command,
+> 
+> ```vim
+> :TSInstall vimdoc
+> ```
+
+- `vimdoc`
+
+Fonts,
+
+- *Nerd fonts* are recommended.
+
+>[!TIP]
+> It is recommended to run `:checkhealth helpview` after installing the plugin to check if any potential issues exist.
+
+## 📐 Installation
+
+### 🧩 Vim-plug
+
+Add this to your plugin list.
+
+```vim
+Plug "OXY2DEV/helpview.nvim"
+```
 
 ### 💤 Lazy.nvim
 
->[!CAUTION]
-> Lazy loading isn't necessary for this plugin and is therefore discouraged.
+>[!WARNING]
+> Do *not* lazy load this plugin as it is already lazy-loaded.
+>
+> Lazy-loading will cause **more time** for the previews to load when starting Neovim.
 
-For `lazy.lua` users:
-
-```lua
-{
-    "OXY2DEV/helpview.nvim",
-    lazy = false, -- Recommended
-
-    -- In case you still want to lazy load
-    -- ft = "help",
-
-    dependencies = {
-        "nvim-treesitter/nvim-treesitter"
-    }
-}
-```
-
-For `lazy/helpview.lua` users:
+The plugin should be loaded *after* your colorscheme to ensure the correct highlight groups are used.
 
 ```lua
+-- For `plugins/helpview.lua` users.
 return {
     "OXY2DEV/helpview.nvim",
-    lazy = false, -- Recommended
+    lazy = false
+};
+```
 
-    -- In case you still want to lazy load
-    -- ft = "help",
-
-    dependencies = {
-        "nvim-treesitter/nvim-treesitter"
-    }
-}
+```lua
+-- For `plugins.lua` users.
+{
+    "OXY2DEV/helpview.nvim",
+    lazy = false
+},
 ```
 
 ### 🦠 Mini.deps
@@ -78,103 +128,204 @@ return {
 local MiniDeps = require("mini.deps");
 
 MiniDeps.add({
-    source = "OXY2DEV/helpview.nvim",
-
-    depends = {
-        "nvim-treesitter/nvim-treesitter"
-    }
+    source = "OXY2DEV/helpview.nvim"
 });
 ```
 
 ### 🌒 Rocks.nvim
 
-You can install the plugin using `:Rocks install`.
+>[!WARNING]
+> `luarocks package` may sometimes be a bit behind `main`.
 
 ```vim
 :Rocks install helpview.nvim
 ```
 
-### 👾 GitHub releases
+### 📥 GitHub release
 
-Check the [releases](https://github.com/OXY2DEV/helpview.nvim/releases) tab to download the latest release.
+Tagged releases can be found in the [release page](https://github.com/OXY2DEV/helpview.nvim/releases).
 
-### Others
+>[!NOTE]
+> `Github releases` may sometimes be slightly behind `main`.
 
-Installation process for other plugin managers are similar.
+### 🚨 Development version
 
-```vim
-Plug "nvim-treesitter/nvim-treesitter";
-Plug "OXY2DEV/helpview.nvim";
+You can use the [dev](https://github.com/OXY2DEV/helpview.nvim/tree/dev) branch to use test features.
+
+>[!WARNING]
+> Development releases can contain *breaking changes* and **experimental changes**.
+> Use at your own risk!
+
+```lua
+return {
+    "OXY2DEV/helpview.nvim",
+    branch = "dev",
+    lazy = false
+};
 ```
 
-## Commands
+## 🧭 Configuration
 
-The plugin comes with the `Helpview` command. It has the following sub-commands,
+Check the [wiki](https://github.com/OXY2DEV/helpview.nvim/wiki) for the entire configuration table. A simplified version is given below.
 
-- toggleAll
+```lua
+```
 
-  Toggles the plugin itself.
+## 🎇 Commands
 
-- enableAll
+This plugin follows the *sub-commands* approach for creating commands. There is only a single `:Helpview` command.
 
-  Enables the plugin.
+It comes with the following sub-commands,
 
-- disableAll
+>[!NOTE]
+> When no sub-command name is provided(or an invalid sub-command is used) `:Helpview` will run `:Helpview Toggle`.
 
-  Disables the plugin
 
-- toggle {buffer}
+| Sub-command  | Arguments           | Description                              |
+|--------------|---------------------|------------------------------------------|
+| `Start`      | none                | Allows attaching to new buffers.         |
+| `Stop`       | none                | Prevents attaching to new buffers.       |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `attach`     | **buffer**, integer | Attaches to **buffer**.                  |
+| `detach`     | **buffer**, integer | Detaches from **buffer**.                |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `Enable`     | none                | Enables preview *globally*.              |
+| `Disable`    | none                | Disables preview *globally*.             |
+| `Toggle`     | none                | Toggles preview *globally*.              |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `enable`     | **buffer**, integer | Enables preview for **buffer**.          |
+| `disable`    | **buffer**, integer | Disables preview for **buffer**.         |
+| `toggle`     | **buffer**, integer | Toggles preview for **buffer**.          |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `splitOpen`  | **buffer**, integer | Opens *splitview* for **buffer**.        |
+| `splitClose` | none                | Closes any open *splitview*.             |
+| `splitToggle`| none                | Toggles *splitview*.                     |
+| `splitRedraw`| none                | Updates *splitview* contents.            |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `Render`     | none                | Updates preview of all *active* buffers. |
+| `Clear`      | none                | Clears preview of all **active** buffer. |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `render`     | **buffer**, integer | Renders preview for **buffer**.          |
+| `clear`      | **buffer**, integer | Clears preview for **buffer**.           |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `toggleAll`  | none                | **Deprecated** version of `Toggle`.      |
+| `enableAll`  | none                | **Deprecated** version of `Enable`.      |
+| `disableAll` | none                | **Deprecated** version of `Disable`.     |
+| ———————————— | ——————————————————— | ———————————————————————————————————————— |
+| `traceExport`| none                | Exports trace logs to `trace.txt`.       |
+| `traceShow`  | none                | Shows trace logs in a window.            |
 
-  Toggles the plugin on the specific buffer.
+>[!TIP]
+> **buffer** defaults to the current buffer. So, you can run commands on the current buffer without providing the buffer.
+> ```vim
+> :Helpview toggle "Toggles preview of the current buffer.
+> ```
 
-- enable {buffer}
+## 🎨 Highlight groups
 
-  Enables the plugin on the specific buffer.
+`helpgiew.nvim` creates a number of *primary highlight groups* that are used by most of the decorations.
 
-- disable {buffer}
+>[!IMPORTANT]
+> These groups are all **generated** during runtime and as such their colors may look different.
 
-  Disables the plugin on the specific buffer.
+If you want to create your own *dynamic* highlight groups or modify existing ones, see the [custom highlight groups](placeholder) section.
 
----
 
-Check out the help files(via `:h helpview.nvim`) to learn more!
+| Highlight group      | Generated from                           | Default                     |
+|----------------------|------------------------------------------|-----------------------------|
+| HelpviewPalette0     | Normal(bg) + Comment(fg)                 | fg: `#9399b2` bg: `#35374a` |
+| HelpviewPalette0Fg   | Comment(fg)                              | fg: `#9399b2`               |
+| HelpviewPalette0Bg   | Normal(bg) + Comment(fg)                 | bg: `#35374a`               |
+| HelpviewPalette0Sign | Normal(bg) + Comment(fg), LineNr(bg)     | fg: `#9399b2`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette1     | Normal(bg) + markdownH1(fg)              | fg: `#f38ba8` bg: `#4d3649` |
+| HelpviewPalette1Fg   | markdownH1(fg)                           | fg: `#f38ba8`               |
+| HelpviewPalette1Bg   | Normal(bg) + markdownH1(fg)              | bg: `#4d3649`               |
+| HelpviewPalette1Sign | Normal(bg) + markdownH1(fg), LineNr(bg)  | fg: `#f38ba8`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette2     | Normal(bg) + markdownH2(fg)              | fg: `#f9b387` bg: `#4d3d43` |
+| HelpviewPalette2Fg   | markdownH2(fg)                           | fg: `#f9b387`               |
+| HelpviewPalette2Bg   | Normal(bg) + markdownH2(fg)              | bg: `#4d3d43`               |
+| HelpviewPalette2Sign | Normal(bg) + markdownH2(fg), LineNr(bg)  | fg: `#f9b387`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette3     | Normal(bg) + markdownH3(fg)              | fg: `#f9e2af` bg: `#4c474b` |
+| HelpviewPalette3Fg   | markdownH3(fg)                           | fg: `#f9e2af`               |
+| HelpviewPalette3Bg   | Normal(bg) + markdownH3(fg)              | bg: `#4c474b`               |
+| HelpviewPalette3Sign | Normal(bg) + markdownH3(fg), LineNr(bg)  | fg: `#f9e2af`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette4     | Normal(bg) + markdownH4(fg)              | fg: `#a6e3a1` bg: `#3c4948` |
+| HelpviewPalette4Fg   | markdownH4(fg)                           | fg: `#a6e3a1`               |
+| HelpviewPalette4Bg   | Normal(bg) + markdownH4(fg)              | bg: `#3c4948`               |
+| HelpviewPalette4Sign | Normal(bg) + markdownH4(fg), LineNr(bg)  | fg: `#a6e3a1`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette5     | Normal(bg) + markdownH5(fg)              | fg: `#74c7ec` bg: `#314358` |
+| HelpviewPalette5Fg   | markdownH5(fg)                           | fg: `#74c7ec`               |
+| HelpviewPalette5Bg   | Normal(bg) + markdownH5(fg)              | bg: `#314358`               |
+| HelpviewPalette5Sign | Normal(bg) + markdownH5(fg), LineNr(bg)  | fg: `#74c7ec`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette6     | Normal(bg) + markdownH6(fg)              | fg: `#b4befe` bg: `#3c405b` |
+| HelpviewPalette6Fg   | markdownH6(fg)                           | fg: `#b4befe`               |
+| HelpviewPalette6Bg   | Normal(bg) + markdownH6(fg)              | bg: `#3c405b`               |
+| HelpviewPalette6Sign | Normal(bg) + markdownH6(fg), LineNr(bg)  | fg: `#b4befe`               |
+| ———————————————————— | ———————————————————————————————————————— | ——————————————————————————— |
+| HelpviewPalette7     | Normal(bg) + @conditional(fg)            | fg: `#cba6f7` bg: `#403b5a` |
+| HelpviewPalette7Fg   | @conditional(fg)                         | fg: `#cba6f7`               |
+| HelpviewPalette7Bg   | Normal(bg) + @conditional(fg)            | bg: `#403b5a`               |
+| HelpviewPalette7Sign | Normal(bg) + @conditional(fg), LineNr(bg)| fg: `#cba6f7`               |
 
-## Highlight groups
 
-For ease of configuration `helpview.nvim` comes with the following highlight groups.
+> The source highlight group's values are turned into `Lab` color-space and then mixed to reduce unwanted results.
 
-### 💻 Code blocks and Inline codes
+These groups are then used as links by other groups responsible for various preview elements,
 
-- `HelpviewCode`, background of code blocks. From `Normal`.
-- `HelpviewCodeLanguage`, background for language names. From `Comment`.
+>[!NOTE]
+> These groups exist for the sake of *backwards compatibility* and *ease of use*.
+>
+> You will see something like `fg: Normal`, it means the *fg* of Normal was used as the *fg* of that group.
 
-### 🔖 Headings
 
-- `HelpviewHeading1`, from `DiagnosticOk`.
-- `HelpviewHeading2`, from `DiagnosticHint`.
-- `HelpviewHeading3`, from `DiagnosticInfo`.
-- `HelpviewHeading4`, from `Special`.
+| Highlight group           | value                                    |
+|---------------------------|------------------------------------------|
+| HelpviewCode              | bg\*: `normal` ± 5%(L)                   |
+| HelpviewCodeInfo          | bg\*: `normal` ± 5%(L), fg: `comment`    |
+| HelpviewCodeFg            | fg\*: `normal` ± 5%(L)                   |
+| HelpviewInlineCode        | fg\*: `normal` ± 10%(L)                  |
+| ————————————————————————— | ———————————————————————————————————————— |
+| HelpviewIcon0             | link\*\*: `HelpviewPalette0Fg`           |
+| HelpviewIcon1             | link\*\*: `HelpviewPalette1Fg`           |
+| HelpviewIcon2             | link\*\*: `HelpviewPalette5Fg`           |
+| HelpviewIcon3             | link\*\*: `HelpviewPalette4Fg`           |
+| HelpviewIcon4             | link\*\*: `HelpviewPalette3Fg`           |
+| HelpviewIcon5             | link\*\*: `HelpviewPalette2Fg`           |
+| ————————————————————————— | ———————————————————————————————————————— |
+| HelpviewGradient0         | fg: `Normal`                             |
+| HelpviewGradient1         | fg\*\*\*: `lerp(Normal, Title, 1/9)`     |
+| HelpviewGradient2         | fg\*\*\*: `lerp(Normal, Title, 2/9)`     |
+| HelpviewGradient3         | fg\*\*\*: `lerp(Normal, Title, 3/9)`     |
+| HelpviewGradient4         | fg\*\*\*: `lerp(Normal, Title, 4/9)`     |
+| HelpviewGradient5         | fg\*\*\*: `lerp(Normal, Title, 5/9)`     |
+| HelpviewGradient6         | fg\*\*\*: `lerp(Normal, Title, 6/9)`     |
+| HelpviewGradient7         | fg\*\*\*: `lerp(Normal, Title, 7/9)`     |
+| HelpviewGradient8         | fg\*\*\*: `lerp(Normal, Title, 8/9)`     |
+| HelpviewGradient9         | fg: `Title`                              |
 
-### 📏 Horizontal rules
 
-- `HelpviewGradient1`, from `Normal`.
-- `HelpviewGradient2`
-- `HelpviewGradient3`
-- `HelpviewGradient4`
-- `HelpviewGradient5`
-- `HelpviewGradient6`
-- `HelpviewGradient7`
-- `HelpviewGradient8`
-- `HelpviewGradient9`
-- `HelpviewGradient10`, from `Tag`.
+> \* = The color is converted to HSL and it's luminosity(L) is increased/decreased by the specified amount.
+> 
+> \*\* = The background color of `HelpviewCode` is added to the groups.
+> 
+> \*\*\* = Linearly interpolated value between 2 highlight groups `fg`.
 
-### 🤔 Others
+There are also highlight groups that are made using the default highlight groups
 
-- `HelpviewTaglink`, from `Title`.
-- `HelpviewOptionlink`, from `Tag`.
-- `HelpviewMentionlink`, from `Title`.
 
-### 📖 Title
+| Highlight group           | Inherited from                           |
+|---------------------------|------------------------------------------|
+| HelpviewTaglink           | @markup.link.vimdoc                      |
+| HelpviewTag               | @label.vimdoc                            |
+| HelpviewTag               | @label.vimdoc                            |
+| HelpviewOptionlink        | @markup.link.vimdoc                      |
+| HelpviewKeycode           | @string.special.vimdoc                   |
+| HelpviewArgument          | @variable.parameter.vimdoc               |
 
-- `HelpviewTitle`, from `DiagnosticWarn`.
 
