@@ -204,7 +204,7 @@ helpview.render = function (buffer, state)
 	---@type [ integer, integer ] Number of lines to draw on large buffers.
 	local draw_range = spec.get({ "preview", "draw_range" }, { fallback = { vim.o.lines, vim.o.lines }, ignore_enable = true });
 	---@type [ integer, integer ] Number of lines to be considered being edited.
-	local edit_range = spec.get({ "preview", "edit_range" }, { fallback = { 1, 0 }, ignore_enable = true });
+	local edit_range = spec.get({ "preview", "edit_range" }, { fallback = { 0, 0 }, ignore_enable = true });
 
 	---@type integer Buffer's line count.
 	local line_count = vim.api.nvim_buf_line_count(buffer);

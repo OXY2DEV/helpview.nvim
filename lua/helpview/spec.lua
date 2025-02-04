@@ -12,6 +12,9 @@ spec.default = {
 		modes = { "n", "c", "no" },
 		max_buf_lines = 500,
 
+		draw_range = { 2 * vim.o.lines, 2 * vim.o.lines },
+		edit_range = { 0, 0 },
+
 		filetypes = { "help" },
 		-- hybrid_modes = { "n" },
 		-- linewise_hybrid_mode = true

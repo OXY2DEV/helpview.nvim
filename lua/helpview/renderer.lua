@@ -24,7 +24,8 @@ renderer.option_maps = {
 		tag_links = { "vimdoc_taglink" },
 		tags = { "vimdoc_tag" },
 		highlight_groups = { "vimdoc_hl" },
-		horizontal_rules = { "vimdoc_hr" }
+		horizontal_rules = { "vimdoc_hr" },
+		urls = { "vimdoc_url" }
 	}
 	---_
 };
@@ -159,6 +160,15 @@ end
 --- Range modifiers for various nodes.
 ---@type { [string]: fun(range: node.range): node.range }
 renderer.range_modifiers = {
+	["vimdoc_hr"] = function (range)
+		return {
+			row_start = range.row_start,
+			row_end = range.row_start,
+
+			col_start = range.col_start,
+			col_end = range.col_end
+		};
+	end
 };
 
 --- Fixes node ranges for `hybrid mode`.
@@ -264,7 +274,6 @@ renderer.filter = function (content, filter, clear)
 
 		for _, ref in ipairs(references) do
 			local range = ref[2];
-			-- vim.print(range.row_start .. ":" .. range.row_end)
 
 			if range.row_start >= clear_range[1] and range.row_end <= clear_range[2] then
 				table.remove(content[lang], ref[1] - removed);
