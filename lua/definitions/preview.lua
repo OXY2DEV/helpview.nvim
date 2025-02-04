@@ -47,4 +47,39 @@ local M = {};
 --- See `:h nvim.open_win()`.
 ---@field splitview_winopts? table
 
+
+---@class preview.callbacks
+---
+--- Called when attaching to a buffer.
+---@field on_attach? fun(buf: integer, wins: integer[]): nil
+--- Called when detaching from a buffer.
+---@field on_detach? fun(buf: integer, wins: integer[]): nil
+---
+--- Called when disabling preview of a buffer.
+--- Also called when opening `splitview`.
+---@field on_disable? fun(buf: integer, wins: integer[]): nil
+--- Called when enabling preview of a buffer.
+--- Also called when disabling `splitview`.
+---@field on_enable? fun(buf: integer, wins: integer[]): nil
+---
+--- Called when disabling hybrid mode in a buffer.
+--- > Called after `on_attach` when attaching to a buffer.
+--- > Called after `on_disable`.
+---@field on_hybrid_disable? fun(buf: integer, wins: integer[]): nil
+--- Called when enabling hybrid mode in a buffer.
+--- > Called after `on_attach`(if `hybrid_mod` is disabled).
+--- > Called after `on_enable`.
+---@field on_hybrid_enable? fun(buf: integer, wins: integer[]): nil
+---
+--- Called when changing VIM-modes(only on active buffers).
+---@field on_mode_change? fun(buf: integer, wins: integer[], mode: string): nil
+---
+--- Called before closing splitview.
+---@field on_splitview_close? fun(source: integer, preview_buf: integer, preview_win: integer): nil
+--- Called when opening splitview.
+---@field on_splitview_open? fun(source: integer, preview_buf: integer, preview_win: integer): nil
+---
+--- Called when opening `:Help`(:H).
+---@field on_help_open? fun(preview_buf: integer, preview_win: integer, overlay_buf: integer, overlay_win: integer): nil
+
 return M;
