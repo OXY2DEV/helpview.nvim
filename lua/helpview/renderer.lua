@@ -23,7 +23,7 @@ renderer.option_maps = {
 		option_links = { "vimdoc_optionlink" },
 		tag_links = { "vimdoc_taglink" },
 		tags = { "vimdoc_tag" },
-		highlights = { "vimdoc_hl" },
+		highlight_groups = { "vimdoc_hl" },
 		horizontal_rules = { "vimdoc_hr" }
 	}
 	---_
