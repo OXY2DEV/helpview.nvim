@@ -264,7 +264,7 @@ vimdoc.keycode = function (buffer, _, text, range)
 	---@type vimdoc.__keycode
 	vimdoc.insert({
 		class = "vimdoc_keycode",
-		label = text[1]:gsub("%|", ""),
+		label = text[1]:gsub("[%<%>]", ""),
 		after = after:match("^	+"),
 
 		text = text,
@@ -360,7 +360,7 @@ vimdoc.note = function (buffer, TSNode, text, range)
 	---@type vimdoc.__note
 	vimdoc.insert({
 		class = "vimdoc_note",
-		label = text[1]:gsub("%|", ""),
+		label = text[1]:gsub("%:$", ""),
 		after = after:match("^	+"),
 
 		text = text,
@@ -382,7 +382,7 @@ vimdoc.optionlink = function (buffer, _, text, range)
 	---@type vimdoc.__optionlink
 	vimdoc.insert({
 		class = "vimdoc_optionlink",
-		label = text[1]:gsub("%|", ""),
+		label = text[1]:gsub("%'", ""),
 		after = after:match("^	+"),
 
 		text = text,
