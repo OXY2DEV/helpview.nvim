@@ -443,10 +443,13 @@ vimdoc.word = function (_, _, text, range)
 	---+
 
 	if vim.fn.hlexists(text[1]) then
+		local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
 		---@type vimdoc.__hl
 		vimdoc.insert({
 			class = "vimdoc_hl",
 			group_name = text[1],
+			after = after:match("^	+"),
 
 			text = text,
 			range = range
