@@ -475,9 +475,23 @@ highlights.set_hl = function (name, value)
 
 			message = err
 		});
+	else
+		table.insert(highlights.created, name);
 	end
 end
 
+--- Destroys created highlight groups.
+--- Internal function! Should be only called
+--- manually!
+highlights.destroy = function ()
+	for _, name in ipairs(highlights.created) do
+		--- BUG, `nvim_set_hl()` gives unexpected
+		--- behavior.
+		vim.cmd("hi clear " .. name);
+	end
+
+	highlights.created = {};
+end
 --- Creates highlight groups from an array of tables
 ---@param array { [string]: config.hl | fun(): config.hl }
 highlights.create = function (array)
