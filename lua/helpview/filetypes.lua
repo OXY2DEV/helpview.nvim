@@ -726,7 +726,7 @@ fts.get = function (ft)
 		_ft = vim.filetype.match({ filename = string.format("example.%s", _ft) });
 	end
 
-	local spec = require("markview.spec");
+	local spec = require("helpview.spec");
 	local provider_name = spec.get({ "preview", "icon_provider" }, { fallback = "internal", ignore_enable = true });
 	local conf = {};
 

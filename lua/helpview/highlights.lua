@@ -1,9 +1,9 @@
 --- *Dynamic* highlight group related methods
---- for `markview.nvim`.
+--- for `helpview.nvim`.
 --- 
 local highlights = {};
-local health = require("markview.health");
-local utils = require("markview.utils");
+local health = require("helpview.health");
+local utils = require("helpview.utils");
 
 local lerp = utils.lerp;
 local clamp = utils.clamp;
@@ -256,7 +256,7 @@ end
 ---@return integer[]
 ---@deprecated
 highlights.hsl = function (rgb)
-	vim.notify("[ markview.nvim ]: highlights.hsl is deprecated. Use 'highlights.rgb_to_hsl' instead", vim.log.levels.WARN);
+	vim.notify("[ helpview.nvim ]: highlights.hsl is deprecated. Use 'highlights.rgb_to_hsl' instead", vim.log.levels.WARN);
 	return highlights.rgb_to_hsl(rgb);
 end
 
@@ -302,7 +302,7 @@ end
 ---@return number[]
 ---@deprecated
 highlights.opacify = function (fg, bg, alpha)
-	vim.notify("[ markview.nvim ]: highlights.opacify is deprecated. Use 'highlights.mix' instead", vim.log.levels.WARN);
+	vim.notify("[ helpview.nvim ]: highlights.opacify is deprecated. Use 'highlights.mix' instead", vim.log.levels.WARN);
 	return {
 		math.floor((fg[1] * alpha) + (bg[1] * (1 - alpha))),
 		math.floor((fg[2] * alpha) + (bg[2] * (1 - alpha))),
@@ -564,7 +564,7 @@ end
 ---@return any
 ---@deprecated
 highlights.color = function (opt, fallback, on_light, on_dark)
-	vim.notify("[ markview.nvim ]: highlights.color is deprecated. Use 'highlights.get_property' instead", vim.log.levels.WARN);
+	vim.notify("[ helpview.nvim ]: highlights.color is deprecated. Use 'highlights.get_property' instead", vim.log.levels.WARN);
 	highlights.get_property(opt, fallback, on_light, on_dark);
 end
 

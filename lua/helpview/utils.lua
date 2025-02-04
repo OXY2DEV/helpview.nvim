@@ -191,7 +191,7 @@ utils.pattern = function (main_config, txt, opts)
 		return true;
 	end
 
-	local spec = require("markview.spec");
+	local spec = require("helpview.spec");
 
 	local default  = spec.get({ "default" }, { source = main_config, fallback = {}, eval_args = opts.eval_args });
 	--- NOTE, Pattern items can also be dynamic.
@@ -311,7 +311,7 @@ utils.match = function (config, name, opts)
 	name = name or "";
 	opts = opts or {};
 
-	local spec = require("markview.spec");
+	local spec = require("helpview.spec");
 
 	--- Default configuration
 	local default = {};
