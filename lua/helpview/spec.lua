@@ -18,7 +18,39 @@ spec.default = {
 	},
 
 	vimdoc = {
+		arguments = {
+			enable = true,
+
+			default = {
+				hl = "Argument",
+				padding_left = " ",
+				padding_right = " ",
+			},
+		},
+
+		code_blocks = {
+			enable = true,
+
+			border_hl = "Code",
+
+			default = { block_hl = "HelpviewCode" },
+
+			["diff"] = {
+				block_hl = function (_, line)
+					if line:match("^%s*%+") then
+						return "HelpviewPalette4";
+					elseif line:match("^%s*%-") then
+						return "HelpviewPalette1";
+					else
+						return "HelpviewCode";
+					end
+				end
+			}
+		},
+
 		headings = {
+			enable = true,
+
 			heading_1 = {
 				sign = " ⣾⣿⠛⣿⣷ ",
 				sign_hl = "Palette1Inv",
@@ -27,6 +59,7 @@ spec.default = {
 
 				hl = "Palette1Fg"
 			},
+
 			heading_2 = {
 				sign = " ⣠⠞⠛⠳⣄ ",
 				sign_hl = "Palette2Inv",
@@ -34,6 +67,7 @@ spec.default = {
 				marker_hl = "Palette2",
 				hl = "Palette2Fg"
 			},
+
 			heading_3 = {
 				sign = " ⣯⣤⠛⣤⣽ ",
 				sign_hl = "Palette3Inv",
@@ -41,6 +75,7 @@ spec.default = {
 				marker_hl = "Palette3",
 				hl = "Palette3"
 			},
+
 			heading_4 = {
 				sign = " ⠓⣠⣿⣄⠚ ",
 				sign_hl = "Palette4Inv",
@@ -48,6 +83,10 @@ spec.default = {
 				marker_hl = "Palette4",
 				hl = "Palette4"
 			},
+		},
+
+		highlight_groups = {
+			enable = true
 		},
 
 		horizontal_rules = {
@@ -73,7 +112,7 @@ spec.default = {
 				},
 				{
 					type = "text",
-					text = " • "
+					text = " ◈ "
 				},
 				{
 					type = "repeating",
@@ -98,59 +137,48 @@ spec.default = {
 			}
 		},
 
-		highlight_groups = {
-			enable = true
-		},
+		inline_codes = {
+			enable = true,
 
-		tags = {
-			default = {
-				hl = "Tag",
-				padding_left = " ",
-				padding_right = " ",
-			},
+			hl = "Palette5",
 
-			["%.txt$"] = {
-				hl = "Palette1",
-			}
-		},
-
-		taglinks = {
-			default = {
-				hl = "Taglink",
-				padding_left = " ",
-				padding_right = " ",
-			},
-
-			["%.txt$"] = {
-				hl = "Palette1",
-			}
-		},
-
-		optionlinks = {
-			default = {
-				hl = "Optionlink",
-				padding_left = " ",
-				padding_right = " ",
-			},
-
-			["%.txt$"] = {
-				hl = "Palette1",
-			}
+			padding_left = " ",
+			padding_right = " ",
 		},
 
 		keycodes = {
+			enable = true,
+
 			default = {
 				hl = "Keycode",
+
 				padding_left = " ",
 				padding_right = " ",
+			}
+		},
+
+		modelines = {
+			enable = true,
+
+			border = "─",
+			border_hl = "@text.todo.unchecked",
+
+			data_types = {
+				["nil"] = { value_hl = "@constant.builtin" },
+				["string"] = { value_hl = "String" },
+				["number"] = { value_hl = "Number" },
+				["boolean"] = { value_hl = "Boolean" }
 			},
 
-			["%.txt$"] = {
-				hl = "Palette1",
+			default = {
+				option_hl = "@property",
+				value_hl = "Comment"
 			}
 		},
 
 		notes = {
+			enable = true,
+
 			default = {
 				hl = "Palette5Inv",
 				padding_left = " ",
@@ -166,40 +194,39 @@ spec.default = {
 			},
 		},
 
-		arguments = {
+		optionlinks = {
+			enable = true,
+
 			default = {
-				hl = "Argument",
+				hl = "Optionlink",
+				padding_left = " ",
+				padding_right = " ",
+			}
+		},
+
+		tags = {
+			enable = true,
+
+			default = {
+				hl = "Tag",
+
 				padding_left = " ",
 				padding_right = " ",
 			},
+
+			["%.txt$"] = {
+				hl = "Palette3",
+			}
 		},
 
-		inline_codes = {
-			hl = "Palette5",
-			padding_left = " ",
-			padding_right = " ",
-		},
-
-		code_blocks = {
-			border_hl = "Code",
-
-			default = { block_hl = "Code" }
-		},
-
-		modelines = {
-			border = "─",
-			border_hl = "@text.todo.unchecked",
-
-			data_types = {
-				["nil"] = { value_hl = "@constant.builtin" },
-				["string"] = { value_hl = "String" },
-				["number"] = { value_hl = "Number" },
-				["boolean"] = { value_hl = "Boolean" }
-			},
+		taglinks = {
+			enable = true,
 
 			default = {
-				option_hl = "@property",
-				value_hl = "Comment"
+				hl = "Taglink",
+
+				padding_left = " ",
+				padding_right = " ",
 			}
 		},
 
