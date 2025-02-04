@@ -439,22 +439,24 @@ end
 --- Word processor.
 ---@param text string[]
 ---@param range node.range
-vimdoc.word = function (_, _, text, range)
+vimdoc.hl = function (buffer, _, text, range)
 	---+
 
-	if vim.fn.hlexists(text[1]) then
-		local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
-
-		---@type vimdoc.__hl
-		vimdoc.insert({
-			class = "vimdoc_hl",
-			group_name = text[1],
-			after = after:match("^	+"),
-
-			text = text,
-			range = range
-		});
+	if vim.fn.hlexists(text[1]) == 0 then
+		return;
 	end
+
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	---@type vimdoc.__hl
+	vimdoc.insert({
+		class = "vimdoc_hl",
+		group_name = text[1],
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
 
 	---_
 end
@@ -497,8 +499,8 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 
 		(line
 			.
-			(word) @vimdoc.word
-			(#match? @vimdoc.word "^[a-zA-Z0-9l_\.@\-]*$"))
+			(word) @vimdoc.hl
+			(#match? @vimdoc.hl "^[a-zA-Z0-9l_\.@\-]*$"))
 
 		((tag) @vimdoc.tag)
 
