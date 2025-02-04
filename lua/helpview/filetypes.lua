@@ -730,8 +730,8 @@ fts.get = function (ft)
 	local provider_name = spec.get({ "preview", "icon_provider" }, { fallback = "internal", ignore_enable = true });
 	local conf = {};
 
-	if provider_name == "devicons" and pcall(require, "nvim-web-devicons") then
-		conf.icon, conf.icon_hl = require("nvim-web-devicons").get_icon(
+	if provider_name == "devicons" and package.loaded["nvim-web-devicons"] then
+		conf.icon, conf.icon_hl = package.loaded["nvim-web-devicons"].get_icon(
 			string.format("example.%s", ft),
 			nil,
 			{ default = true }
@@ -742,8 +742,8 @@ fts.get = function (ft)
 		conf.sign = conf.icon;
 		conf.sign_hl = conf.icon_hl;
 		conf.border_hl = conf.icon_hl;
-	elseif provider_name == "mini" and pcall(require, "mini.icons") then
-		conf.icon, conf.icon_hl = require("mini.icons").get(
+	elseif provider_name == "mini" and package.loaded["mini.icons"] then
+		conf.icon, conf.icon_hl = package.loaded["mini.icons"].get(
 			"file",
 			string.format("example.%s", ft)
 		);
