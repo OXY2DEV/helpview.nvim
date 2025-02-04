@@ -325,32 +325,33 @@ utils.match = function (config, name, opts)
 
 	local match = {};
 
-	local sort_keys = function (values)
-		local w_priority = {};
-		local n_priority = {};
+	---@return { key: string, priority: integer }[]
+	local sort_keys = function (tbl)
+		local keys = {};
 
-		for k, v in pairs(values or {}) do
-			if type(v) == "table" and type(v.priority) == "number" then
-				table.insert(w_priority, {
-					key = k,
-					priority = v.priority
+		for key, value in pairs(tbl) do
+			if type(value) == "table" and type(value.priority) == "number" then
+				table.insert(keys, {
+					priority = value.priority,
+					key = key
 				});
-			elseif k ~= "default" and vim.list_contains(opts.ignore_keys or {}, k) == false then
-				table.insert(n_priority, k);
+			else
+				table.insert(keys, {
+					priority = 0,
+					key = key
+				});
 			end
 		end
 
-		table.sort(w_priority, function (a, b)
+		--- Return higher priority or longer pattern
+		--- first.
+		table.sort(keys, function (a, b)
+			if a.priority == b.priority then
+				return a.key > b.key;
+			end
+
 			return a.priority > b.priority;
-		end)
-
-		local keys = {};
-
-		for _, item in ipairs(w_priority) do
-			table.insert(keys, item.key);
-		end
-
-		keys = vim.list_extend(n_priority, keys);
+		end);
 
 		return keys;
 	end
@@ -370,14 +371,12 @@ utils.match = function (config, name, opts)
 	--- NOTE, We should sort the keys so that we
 	--- don't get different results every time
 	--- when multiple patterns can be matched.
-	---
-	---@type string[]
-	local keys = sort_keys(config or {});
+	local sorted = sort_keys(config or {});
 
-	for _, key in ipairs(keys) do
-		if is_valid(name, key) == true then
+	for _, entry in ipairs(sorted) do
+		if is_valid(name, entry.key) == true then
 			match = spec.get(
-				{ key },
+				{ entry.key },
 				vim.tbl_extend("force", opts, { source = config })
 			);
 			break
@@ -403,6 +402,14 @@ utils.str_contains = function (str, chars)
 	end
 
 	return string.match(tmp, "^%s*$") ~= nil;
+end
+
+utils.normalize_str = function (str)
+	if type(str) ~= "string" then
+		return "";
+	end
+
+	return string.lower(str):gsub("^%l", string.upper);
 end
 
 return utils;
