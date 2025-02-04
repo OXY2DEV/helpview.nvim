@@ -482,7 +482,7 @@ end
 vimdoc.inline_code = function (buffer, item)
 	---+${lua}
 
-	---@type vimdoc.inlinw_codes?
+	---@type vimdoc.inline_codes?
 	local config = spec.get({ "vimdoc", "inline_codes" });
 	local range = item.range;
 
@@ -959,6 +959,78 @@ vimdoc.taglink = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
+
+	---_
+end
+
+---@param buffer integer
+---@param item vimdoc.__taglink
+vimdoc.url = function (buffer, item)
+	---+${lua}
+
+	---@type vimdoc.taglinks?
+	local main_config = spec.get({ "vimdoc", "urls" });
+
+	if not main_config then
+		return;
+	end
+
+	---@type vimdoc.generic?
+	local config = utils.match(main_config, item.label, {});
+	local range = item.range;
+
+	if not config then
+		return;
+	end
+
+	config = utils.tostatic(config, { args = { buffer, item } });
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.corner_left or "", utils.set_hl(config.corner_left_hl or config.hl) },
+			{ config.padding_left or "", utils.set_hl(config.padding_left_hl or config.hl) },
+			{ config.icon or "", utils.set_hl(config.icon_hl or config.hl) },
+		},
+
+		hl_mode = "combine"
+	});
+
+	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+		undo_restore = false, invalidate = true,
+
+		virt_text_pos = "inline",
+		virt_text = {
+			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+		},
+
+		hl_mode = "combine"
+	});
+
+	if config.text then
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+			undo_restore = false, invalidate = true,
+			end_row = range.row_end,end_col = range.col_end,
+			conceal = "",
+
+			virt_text_pos = "inline",
+			virt_text = {
+				{ config.text or "", utils.set_hl(config.hl) },
+			},
+
+			hl_mode = "combine"
+		});
+	elseif config.hl then
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
+			undo_restore = false, invalidate = true,
+			end_row = range.row_end,end_col = range.col_end,
+
+			hl_group = utils.set_hl(config.hl)
+		});
+	end
 
 	---_
 end

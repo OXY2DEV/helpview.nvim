@@ -456,6 +456,19 @@ vimdoc.word = function (_, _, text, range)
 	---_
 end
 
+--- Url links.
+---@param text string[]
+---@param range node.range
+vimdoc.url = function (_, _, text, range)
+	vimdoc.insert({
+		class = "vimdoc_url",
+		label = text[1],
+
+		text = text,
+		range = range
+	});
+end
+
 --- Vimdoc parser.
 ---@param buffer integer
 ---@param TSTree table
@@ -501,6 +514,8 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 		((codeblock) @vimdoc.code_block)
 
 		((modeline) @vimdoc.modeline)
+
+		((url) @vimdoc.url)
 	]]);
 
 	for capture_id, capture_node, _, _ in scanned_queries:iter_captures(TSTree:root(), buffer, from, to) do
