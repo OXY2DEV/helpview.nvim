@@ -129,7 +129,13 @@ vimdoc.code_block = function (buffer, item)
 		return;
 	end
 
+	--- Returns the configuration for
+	--- a line.
+	---@param line string
+	---@return { block_hl: string }
 	local function get_line_config (line)
+		---+
+
 		---@type { block_hl: string }
 		local line_config;
 
@@ -150,7 +156,8 @@ vimdoc.code_block = function (buffer, item)
 			line_config = line_config(buffer, line);
 		end
 
-		return line_config;
+		return utils.tostatic(line_config, { args = { buffer, line } });
+		---_
 	end
 
 	local decorations = filetypes.get(item.language);
