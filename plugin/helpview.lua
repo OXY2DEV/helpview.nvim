@@ -781,7 +781,7 @@ end, {
 	nargs = "?",
 
 	complete = function (_, cmd, cursorpos)
-		local before = string.sub(cmd, 0, cursorpos):gsub("^Help%s*", "");
+		local before = string.sub(cmd, 0, cursorpos):gsub("^H%s*", "");
 
 		local parts = {};
 
