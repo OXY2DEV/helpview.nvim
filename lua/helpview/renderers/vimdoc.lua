@@ -1048,10 +1048,19 @@ end
 vimdoc.render = function (buffer, content)
 	---+
 
+	--- Custom renderers.
+	---@type { [string]: fun(buffer: integer, item: table): nil }
+	local custom_renderers = spec.get({ "renderers" }, { fallback = {} });
 	vimdoc.lnum_offsets = {};
 
 	for _, item in ipairs(content or {}) do
-		local success, error = pcall(vimdoc[item.class:gsub("^vimdoc%_", "")], buffer, item);
+		local success, error;
+
+		if custom_renderers[item.class] then
+			success, error = pcall(custom_renderers[item.class], buffer, item);
+		else
+			success, error = pcall(vimdoc[item.class:gsub("^vimdoc%_", "")], buffer, item);
+		end
 
 		if success == false then
 			require("helpview.health").notify("trace", {
