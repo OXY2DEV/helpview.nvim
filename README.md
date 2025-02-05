@@ -45,7 +45,7 @@
 - *Dynamic* highlight groups.
 - Hybrid mode for viewing & writing together.
 - Splitview for side-by-side viewing of the file being edited.
-- Custom help command(`:Help`, `:H`)
+- Help command wrappers(`:Help`, `:H`) to change *where* help is shown.
 
 ## 📚 Requirements
 
