@@ -66,7 +66,7 @@ It comes with the following sub-commands,
 ▌ Tip:
 ▌ *buffer* defaults to the current buffer. So, you can run commands on the
 ▌ current buffer without providing the buffer.
-▌ >lua
+▌ >vim
     :Helpview toggle "Toggles preview of the current buffer.
 <
 

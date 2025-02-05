@@ -29,7 +29,8 @@ spec.default = {
 
 		icon_provider = "internal",
 
-		splitview_winopts = { split = "right" }
+		splitview_winopts = { split = "right" },
+		preview_winopts = { width = math.floor(80) }
 	},
 
 	vimdoc = {
