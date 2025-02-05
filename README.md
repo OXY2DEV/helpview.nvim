@@ -288,7 +288,7 @@ It comes with the following sub-commands,
 
 ## 🎨 Highlight groups
 
-`helpgiew.nvim` creates a number of *primary highlight groups* that are used by most of the decorations.
+`helpview.nvim` creates a number of *primary highlight groups* that are used by most of the decorations.
 
 >[!IMPORTANT]
 > These groups are all **generated** during runtime and as such their colors may look different.
