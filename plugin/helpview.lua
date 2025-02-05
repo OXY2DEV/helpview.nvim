@@ -56,6 +56,9 @@ vim.api.nvim_create_autocmd({ "BufAdd", "BufEnter" }, {
 			elseif helpview.actions.__is_attached(buffer) == true then
 				--- Already attached to this buffer!
 				return;
+			elseif helpview.can_attach(buffer) == false then
+				--- Already attached to this buffer!
+				return;
 			end
 
 			---@type string, string
