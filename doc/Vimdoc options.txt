@@ -1,0 +1,1335 @@
+*helpview.nvim-vimdoc*                        Vimdoc options for helpview.nvim
+
+>lua
+    --- Configuration for vimdoc files.
+    ---@class helpview.vimdoc
+    ---
+    --- When `false`, doesn't render vimdoc.
+    ---@field enable? boolean
+    ---
+    --- Configuration for {arguments}.
+    ---@field arguments? vimdoc.arguments
+    ---
+    --- Configuration for code blocks.
+    ---@field code_blocks? vimdoc.code_blocks
+    ---
+    --- Configuration for headings.
+    ---@field headings? vimdoc.headings
+    ---
+    --- Configuration for highlight group names.
+    ---@field highlight_groups? vimdoc.highlights
+    ---
+    --- Configuration for horizontal rules.
+    ---@field horizontal_rules? vimdoc.hr
+    ---
+    --- Configuration for 
+    ---@field inline_codes? vimdoc.inline_codes
+    ---
+    --- Configuration for <Keycodes>.
+    ---@field keycodes? vimdoc.keycodes
+    ---
+    --- Configuration for vim:modeline:.
+    ---@field modeline? vimdoc.modeline
+    ---
+    --- Configuration for Note.
+    ---@field notes? vimdoc.notes
+    ---
+    --- Configuration for 'optionlink'.
+    ---@field optionlinks? vimdoc.optionlinks
+    ---
+    --- Configuration for *tag*.
+    ---@field tag? vimdoc.tags
+    ---
+    --- Configuration for |taglink|.
+    ---@field taglinks? vimdoc.taglinks
+<
+
+▌ Important:
+▌ Most of the inline elements use `vimdoc.generic`. So, it's definition is
+▌ given here.
+
+>lua
+    --- Configuration for a generic inline
+    --- element.
+    ---@class vimdoc.generic
+    ---
+    ---@field corner_left? string
+    ---@field padding_left? string
+    ---
+    ---@field icon? string
+    ---
+    ---@field padding_right? string
+    ---@field corner_right? string
+    ---
+    --- Primary highlight group.
+    --- Used by other `*_hl` option(s) when
+    --- a value isn't given.
+    ---@field hl? string
+    ---
+    ---@field corner_left_hl? string
+    ---@field padding_left_hl? string
+    ---
+    ---@field icon_hl? string
+    ---
+    ---@field padding_right_hl? string
+    ---@field corner_right_hl? string
+<
+
+enable ~
+                                                 *helpview.nvim-vimdoc.enable*
+
+    • Type: `boolean`
+
+Can be set to `false` to stop rendering *only* vimdoc.
+
+arguments ~
+                                              *helpview.nvim-vimdoc.arguments*
+
+    • Type: `vimdoc.arguments`
+
+Configuration for `{arguments}`.
+
+>lua
+    --- Configuration for `{arguments}`.
+    ---@class vimdoc.arguments
+    ---
+    --- When `false`, arguments don't get rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for arguments.
+    ---@field default vimdoc.generic
+    --- Configuration for `{string}`.
+    ---@field [string] vimdoc.generic
+    arguments = {
+        enable = true,
+
+        default = {
+            hl = "Argument",
+            padding_left = " ",
+            padding_right = " ",
+        },
+    },
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__argument
+    ---
+    ---@field class "vimdoc_argument",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.arg = {
+        class = "vimdoc_argument",
+        label = "argument",
+        range = {
+            col_end = 10,
+            col_start = 0,
+            row_end = 7,
+            row_start = 7
+        },
+        text = { "{argument}" }
+    };
+<
+
+code_blocks ~
+                                            *helpview.nvim-vimdoc.code_blocks*
+
+    • Type: `vimdoc.code_blocks`
+
+Configuration for code blocks.
+
+>lua
+    --- Configuration for code blocks.
+    ---@class vimdoc.code_blocks
+    ---
+    --- When `false`, code blocks don't get rendered.
+    ---@field enable? boolean
+    ---
+    --- Highlight group for the top & bottom borders.
+    ---@field border_hl? string
+    --- Highlight group for the language label.
+    ---@field label_hl? string
+    ---
+    --- Default line configuration(used for stuff like `diff`).
+    ---@field default { block_hl: string }
+    --- Line configuration when the language is `string`.
+    ---@field [string] { block_hl: string }
+    code_blocks = {
+        enable = true,
+
+        border_hl = "Code",
+
+        default = { block_hl = "HelpviewCode" },
+
+        ["diff"] = {
+            block_hl = function (_, line)
+                if line:match("^%s*%+") then
+                    return "HelpviewPalette4";
+                elseif line:match("^%s*%-") then
+                    return "HelpviewPalette1";
+                else
+                    return "HelpviewCode";
+                end
+            end
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__code_block
+    ---
+    ---@field class "vimdoc_code_block"
+    ---@field language string?
+    ---
+    ---@field top_border [ boolean, boolean ]
+    ---@field bottom_border [ boolean, boolean ]
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.code_block = {
+        bottom_border = { false, false },
+        class = "vimdoc_code_block",
+        language = "diff",
+        range = {
+            col_end = 0,
+            col_start = 0,
+            row_end = 5,
+            row_start = 3
+        },
+        text = { ">diff", "    + h" },
+        top_border = { false, false }
+    };
+<
+
+headings ~
+                                               *helpview.nvim-vimdoc.headings*
+
+    • Type: `vimdoc.headings`
+
+Configuration for headings.
+
+>lua
+    --- Configuration for headings.
+    ---@class vimdoc.headings
+    ---
+    --- When `false`, headings don't get rendered.
+    ---@field enable? boolean
+    ---
+    --- Configuration for === headings.
+    ---@field heading_1 headings.opts
+    --- Configuration for --- headings.
+    ---@field heading_2 headings.opts
+    --- Configuration for ABC headings.
+    ---@field heading_3 headings.opts
+    --- Configuration for A ~ headings.
+    ---@field heading_4 headings.opts
+    headings = {
+        enable = true,
+
+        heading_1 = {
+            sign = " ⣾⣿⠛⣿⣷ ",
+            sign_hl = "Palette1Inv",
+
+            marker_hl = "Palette1Bg",
+
+            hl = "Palette1Fg"
+        },
+
+        heading_2 = {
+            sign = " ⣠⠞⠛⠳⣄ ",
+            sign_hl = "Palette2Inv",
+
+            marker_hl = "Palette2",
+            hl = "Palette2Fg"
+        },
+
+        heading_3 = {
+            sign = " ⣯⣤⠛⣤⣽ ",
+            sign_hl = "Palette3Inv",
+
+            marker_hl = "Palette3",
+            hl = "Palette3"
+        },
+
+        heading_4 = {
+            sign = " ⠓⣠⣿⣄⠚ ",
+            sign_hl = "Palette4Inv",
+
+            marker_hl = "Palette4",
+            hl = "Palette4"
+        },
+    }
+
+    --------------------------------------------------
+
+    --- Configuration options for each heading
+    --- level.
+    ---@class headings.opts
+    ---
+    --- Primary highlight group.
+    --- Used by other `*_hl` option(s) when
+    --- a value isn't given.
+    ---@field hl? string
+    ---
+    --- Text used to replace `=`/`-` parts.
+    --- On level 3 & 4 headings it covers the
+    --- whitespace instead.
+    ---@field marker? string
+    --- Highlight group for `marker`.
+    ---@field marker_hl? string
+    ---
+    --- Text to show in the **right** side of
+    --- the heading.
+    ---@field sign? string
+    --- Highlight group for `sign`.
+    ---@field sign_hl? string
+    ---
+    --- Text to add before & after the `sign`.
+    ---@field label? [ string, string ]
+    --- Highlight group for the parts of the
+    --- label.
+    ---@field label_hl? [ string, string ]
+    heading_1 = {
+        sign = " ⣾⣿⠛⣿⣷ ",
+        sign_hl = "Palette1Inv",
+
+        marker_hl = "Palette1Bg",
+
+        hl = "Palette1Fg"
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__heading
+    ---
+    ---@field class "vimdoc_heading"
+    ---@field level 
+    ---| 1 Headings using === delimiters.
+    ---| 2 Headings using --- delimiters.
+    ---| 3 Headings using CAP-italized text.
+    ---| 4 Headings using A ~.
+    ---
+    ---@field description? string
+    ---@field tags? { tag: string, col_start: integer, col_end: integer }[]
+    ---
+    ---@field delimiter string
+    ---
+    ---@field text string[]
+    ---@field range heading.range
+
+    ---@class heading.range
+    ---
+    ---@field row_start integer
+    ---@field row_end integer
+    ---
+    ---@field col_start integer
+    ---@field col_end integer
+    ---
+    ---@field desc_start? integer
+    ---@field desc_end? integer
+    M.heading = {
+        class = "vimdoc_heading",
+        delimiter = "------------------------------------------------------------------------------",
+        description = "Hello Neovim!",
+        level = 2,
+        range = {
+            col_end = 0,
+            col_start = 0,
+            desc_end = 13,
+            desc_start = 0,
+            row_end = 9,
+            row_start = 7
+        },
+        tags = {
+            {
+                col_start = 70,
+                tag = "*tag-1*"
+            }, {
+                col_start = 78,
+                tag = "*tag-2*"
+            }
+        },
+        text = { "------------------------------------------------------------------------------", "Hello Neovim!                                                  *tag-1* *tag-2*" }
+    };
+<
+
+highlight_groups ~
+                                       *helpview.nvim-vimdoc.highlight_groups*
+
+    • Type: `vimdoc.hl`
+
+Configuration for highlight group names.
+
+>lua
+    --- Configuration for highlight group name.
+    ---@see vimdoc.generic
+    ---
+    ---@class vimdoc.highlights
+    ---
+    --- When `false`, highlight group names aren't rendered.
+    ---@field enable? boolean
+    ---
+    ---@field corner_left? string
+    ---@field padding_left? string
+    ---
+    ---@field icon? string
+    ---
+    ---@field padding_right? string
+    ---@field corner_right? string
+    ---
+    ---@field hl? string
+    ---
+    ---@field corner_left_hl? string
+    ---@field padding_left_hl? string
+    ---
+    ---@field icon_hl? string
+    ---
+    ---@field padding_right_hl? string
+    ---@field corner_right_hl? string
+    highlight_groups = {
+        enable = true
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__hl
+    ---
+    ---@field class "vimdoc_hl",
+    ---@field group_name string
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.hl = {
+        class = "vimdoc_hl",
+        group_name = "Special",
+        range = {
+            col_end = 7,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "Special" }
+    };
+<
+
+horizontal_rules ~
+                                       *helpview.nvim-vimdoc.horizontal_rules*
+
+    • Type: `vimdoc.hr`
+
+Configuration for horizontal rules.
+
+>lua
+    --- Configuration for horizontal rules.
+    ---@class vimdoc.hr
+    ---
+    --- When `false`, horizontal rules aren't rendered.
+    ---@field enable? boolean
+    ---
+    --- Parts for the shown highlight group
+    ---@field parts (hr.text | hr.repeating)[]
+    horizontal_rules = {
+        parts = {
+            {
+                type = "repeating",
+                repeat_amount = function (buffer)
+                    return math.ceil((vim.bo[buffer].tw - 3) / 2);
+                end,
+
+                text = "─",
+                hl = {
+                    "HelpviewGradient1", "HelpviewGradient1",
+                    "HelpviewGradient2", "HelpviewGradient2",
+                    "HelpviewGradient3", "HelpviewGradient3",
+                    "HelpviewGradient4", "HelpviewGradient4",
+                    "HelpviewGradient5", "HelpviewGradient5",
+                    "HelpviewGradient6", "HelpviewGradient6",
+                    "HelpviewGradient7", "HelpviewGradient7",
+                    "HelpviewGradient8", "HelpviewGradient8",
+                    "HelpviewGradient8", "HelpviewGradient8",
+                }
+            },
+            {
+                type = "text",
+                text = " ◈ "
+            },
+            {
+                type = "repeating",
+                repeat_amount = function (buffer)
+                    return math.floor((vim.bo[buffer].tw - 3) / 2);
+                end,
+                direction = "right",
+
+                text = "─",
+                hl = {
+                    "HelpviewGradient1", "HelpviewGradient1",
+                    "HelpviewGradient2", "HelpviewGradient2",
+                    "HelpviewGradient3", "HelpviewGradient3",
+                    "HelpviewGradient4", "HelpviewGradient4",
+                    "HelpviewGradient5", "HelpviewGradient5",
+                    "HelpviewGradient6", "HelpviewGradient6",
+                    "HelpviewGradient7", "HelpviewGradient7",
+                    "HelpviewGradient8", "HelpviewGradient8",
+                    "HelpviewGradient8", "HelpviewGradient8",
+                }
+            },
+        }
+    }
+
+    --- Shows some text.
+    ---@class hr.text
+    ---
+    --- Part type.
+    ---@field type "text"
+    ---
+    --- Text to show.
+    ---@field text string
+    ---
+    --- Highlight group for `text`.
+    ---@field hl? string
+    {
+        type = "text",
+        text = " ◈ "
+    }
+
+    --- Repeats the given character(s)/highlight group(s).
+    ---@class hr.repeating
+    ---
+    --- Part type.
+    ---@field type "repeating"
+    ---
+    --- Direction to repeat from.
+    ---@field direction "left" | "right"
+    --- Number of times to repeat.
+    ---@field repeat_amount integer | fun(buffer: integer, item: vimdoc.__hr): integer
+    ---
+    --- Should the highlight group be repeated?
+    --- [ Only works when `hl` is a list ]
+    ---@field repeat_hl? boolean
+    --- Should the text be repeated?
+    --- [ Only works when `text` is a list ]
+    ---@field repeat_text? boolean
+    ---
+    ---@field text string | string[]
+    ---@field hl? string | string[]
+    {
+        type = "repeating",
+        repeat_amount = function (buffer)
+            return math.floor((vim.bo[buffer].tw - 3) / 2);
+        end,
+        direction = "right",
+
+        text = "─",
+        hl = {
+            "HelpviewGradient1", "HelpviewGradient1",
+            "HelpviewGradient2", "HelpviewGradient2",
+            "HelpviewGradient3", "HelpviewGradient3",
+            "HelpviewGradient4", "HelpviewGradient4",
+            "HelpviewGradient5", "HelpviewGradient5",
+            "HelpviewGradient6", "HelpviewGradient6",
+            "HelpviewGradient7", "HelpviewGradient7",
+            "HelpviewGradient8", "HelpviewGradient8",
+            "HelpviewGradient8", "HelpviewGradient8",
+        }
+    },
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__hr
+    ---
+    ---@field class "vimdoc_hr"
+    ---
+    ---@field text string[]
+    ---@field range node.range
+    M.hr = {
+        class = "vimdoc_hr",
+        range = {
+            col_end = 78,
+            col_start = 0,
+            row_end = 8,
+            row_start = 7
+        },
+        text = { "------------------------------------------------------------------------------" }
+    };
+<
+
+inline_codes ~
+                                           *helpview.nvim-vimdoc.inline_codes*
+
+    • Type: `vimdoc.inline_codes`
+
+Configuration for inline codes.
+
+>lua
+    --- Configuration for inline codes.
+    ---@see vimdoc.generic
+    ---
+    ---@class vimdoc.inline_codes
+    ---
+    --- When `false`, inline codes aren't rendered.
+    ---@field enable? boolean
+    ---
+    ---@field corner_left? string
+    ---@field padding_left? string
+    ---
+    ---@field icon? string
+    ---
+    ---@field padding_right? string
+    ---@field corner_right? string
+    ---
+    ---@field hl? string
+    ---
+    ---@field corner_left_hl? string
+    ---@field padding_left_hl? string
+    ---
+    ---@field icon_hl? string
+    ---
+    ---@field padding_right_hl? string
+    ---@field corner_right_hl? string
+    inline_codes = {
+        enable = true,
+
+        hl = "Palette5",
+
+        padding_left = " ",
+        padding_right = " ",
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__inline_code
+    ---
+    ---@field class "vimdoc_inline_code",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.inline_code = {
+        class = "vimdoc_inline_code",
+        range = {
+            col_end = 4,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "`hi`" }
+    };
+<
+
+keycodes ~
+                                               *helpview.nvim-vimdoc.keycodes*
+
+    • Type: `vimdoc.keycodes`
+
+Configuration for `<keycodes>`.
+
+>lua
+    --- Configuration for `<keycodes>`
+    ---@class vimdoc.keycodes
+    ---
+    --- When `false`, keycodes aren't rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for keycodes.
+    ---@field default vimdoc.generic
+    ---
+    --- Configuration for `<string>`.
+    ---@field [string] vimdoc.generic
+    keycodes = {
+        enable = true,
+
+        default = {
+            hl = "Keycode",
+
+            padding_left = " ",
+            padding_right = " ",
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__keycode
+    ---
+    ---@field class "vimdoc_keycode",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.keycode = {
+        class = "vimdoc_keycode",
+        label = "C-S",
+        range = {
+            col_end = 5,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "<C-S>" }
+    };
+<
+
+modelines ~
+                                              *helpview.nvim-vimdoc.modelines*
+
+    • Type: `vimdoc.modeline`
+
+Configuration for Vim modeline.
+
+>lua
+    --- Configuration for Vim modeline.
+    ---@class vimdoc.modeline
+    ---
+    --- When `false`, modeline won't be rendered.
+    ---@field enable? boolean
+    ---
+    --- Character to use as the borders.
+    ---@field border string
+    --- Highlight group for the `border`.
+    ---@field border_hl? string
+    ---
+    --- Configuration for various **data-types**.
+    ---@field data_types { [string]: { option_hl: string?, value_hl: string? } }
+    --- Configuration for various options.
+    ---@field [string] { option_hl: string?, value_hl: string? }
+    modelines = {
+        enable = true,
+
+        border = "─",
+        border_hl = "@text.todo.unchecked",
+
+        data_types = {
+            ["nil"] = { value_hl = "@constant.builtin" },
+            ["string"] = { value_hl = "String" },
+            ["number"] = { value_hl = "Number" },
+            ["boolean"] = { value_hl = "Boolean" }
+        },
+
+        default = {
+            option_hl = "@property",
+            value_hl = "Comment"
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__modeline
+    ---
+    ---@field class "vimdoc_modeline"
+    ---@field options { option: string, value: any }[]
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.modeline = {
+        class = "vimdoc_modeline",
+        options = {
+            {
+                option = "textwidth",
+                value = 78
+            }, {
+                option = "iskeyword",
+                value = '!-~,^*,^\\|,^\\"'
+            }, {
+                option = "tabstop",
+                value = 8
+            }, {
+                option = "expandtab",
+                value = false
+            }, {
+                option = "filetype",
+                value = "help"
+            }, {
+                option = "rightleft",
+                value = false
+            }
+        },
+        range = {
+            col_end = 0,
+            col_start = 1,
+            row_end = 11,
+            row_start = 10
+        },
+        text = { 'vim:tw=78:isk=!-~,^*,^\\|,^\\":ts=8:noet:ft=help:norl:' }
+    };
+<
+
+notes ~
+                                                  *helpview.nvim-vimdoc.notes*
+
+    • Type: `vimdoc.notes`
+
+Configuration for various types of notes.
+
+>lua
+    --- Configuration for notes.
+    ---@class vimdoc.notes
+    ---
+    --- When `false`, notes won't be rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for notes.
+    ---@field default vimdoc.generic
+    --- Configuration for `string` note.
+    ---@field [string] vimdoc.generic
+    notes = {
+        enable = true,
+
+        default = {
+            hl = "Palette5Inv",
+            padding_left = " ",
+            padding_right = " ",
+        },
+
+        ["[dD]eprecated"] = {
+            hl = "Palette1Inv",
+        },
+
+        ["[wW]arning"] = {
+            hl = "Palette3Inv",
+        },
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__note
+    ---
+    ---@field class "vimdoc_note",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.note = {
+        class = "vimdoc_note",
+        label = "Note",
+        range = {
+            col_end = 5,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "Note:" }
+    };
+<
+
+optionlinks ~
+                                            *helpview.nvim-vimdoc.optionlinks*
+
+    • Type: `vimdoc.optionlinks`
+
+Configuration for option links.
+
+>lua
+    --- Configuration for optionlinks.
+    ---@class vimdoc.optionlinks
+    ---
+    --- When `false`, optionlinks won't be rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for optionlinks.
+    ---@field default vimdoc.generic
+    --- Configuration for `'string'` optionlink.
+    ---@field [string] vimdoc.generic
+    optionlinks = {
+        enable = true,
+
+        default = {
+            hl = "Optionlink",
+            padding_left = " ",
+            padding_right = " ",
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__optionlink
+    ---
+    ---@field class "vimdoc_optionlink",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.optionlink = {
+        class = "vimdoc_optionlink",
+        label = "expandtab",
+        range = {
+            col_end = 11,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "'expandtab'" }
+    };
+<
+
+tags ~
+                                                   *helpview.nvim-vimdoc.tags*
+
+    • Type: `vimdoc.tags`
+
+Configuration for tags.
+
+>lua
+    --- Configuration for tags.
+    ---@class vimdoc.tags
+    ---
+    --- When `false`, tags won't be rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for tags.
+    ---@field default vimdoc.generic
+    --- Configuration for `*string*` tag.
+    ---@field [string] vimdoc.generic
+    tags = {
+        enable = true,
+
+        default = {
+            hl = "Tag",
+
+            padding_left = " ",
+            padding_right = " ",
+        },
+
+        ["%.txt$"] = {
+            hl = "Palette3",
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__tag
+    ---
+    ---@field class "vimdoc_tag",
+    ---@field tag string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.tag = {
+        class = "vimdoc_tag",
+        range = {
+            col_end = 5,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        tag = "tag",
+        text = { "*tag*" }
+    };
+<
+
+taglinks ~
+                                               *helpview.nvim-vimdoc.taglinks*
+
+    • Type: `vimdoc.taglinks`
+
+Configuration for taglinks.
+
+>lua
+    --- Configuration for taglinks.
+    ---@class vimdoc.taglinks
+    ---
+    --- When `false`, taglinks won't be rendered.
+    ---@field enable? boolean
+    ---
+    --- Default configuration for taglinks.
+    ---@field default vimdoc.generic
+    --- Configuration for `|string|` taglink.
+    ---@field [string] vimdoc.generic
+    taglinks = {
+        enable = true,
+
+        default = {
+            hl = "Taglink",
+
+            padding_left = " ",
+            padding_right = " ",
+        }
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__taglink
+    ---
+    ---@field class "vimdoc_taglink",
+    ---@field label string
+    ---@field after? string,
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.taglink = {
+        class = "vimdoc_taglink",
+        label = "taglink",
+        range = {
+            col_end = 9,
+            col_start = 0,
+            row_end = 9,
+            row_start = 9
+        },
+        text = { "|taglink|" }
+    };
+<
+
+urls ~
+                                                   *helpview.nvim-vimdoc.urls*
+
+    • Type: `vimdoc.urls`
+
+Configuration for URLs.
+
+>lua
+    --- Configuration for URLs.
+    ---@class vimdoc.urls
+    ---
+    ---@field enable? boolean
+    ---
+    ---@field default url.opts
+    ---@field [string] url.opts
+
+    urls = {
+        enable = true,
+
+        default = {
+            icon = "󰌷 ",
+            hl = "@string.special.url.vimdoc",
+        },
+
+        ["github%.com/[%a%d%-%_%.]+%/?$"] = {
+            --- github.com/<user>
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return string.match(item.label, "github%.com/([%a%d%-%_%.]+)%/?$");
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/?$"] = {
+            --- github.com/<user>/<repo>
+            icon = "󰳐 ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/?$");
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+/tree/[%a%d%-%_%.]+%/?$"] = {
+            --- github.com/<user>/<repo>/tree/<branch>
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                local repo, branch = string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)/tree/([%a%d%-%_%.]+)%/?$");
+                return repo .. " at " .. branch;
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+/commits/[%a%d%-%_%.]+%/?$"] = {
+            --- github.com/<user>/<repo>/commits/<branch>
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+/commits/[%a%d%-%_%.]+)%/?$");
+            end
+        },
+
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/releases$"] = {
+            --- github.com/<user>/<repo>/releases
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return "Releases • " .. string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/releases$");
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/tags$"] = {
+            --- github.com/<user>/<repo>/tags
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return "Tags • " .. string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/tags$");
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/issues$"] = {
+            --- github.com/<user>/<repo>/issues
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return "Issues • " .. string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/issues$");
+            end
+        },
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/pulls$"] = {
+            --- github.com/<user>/<repo>/pulls
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return "Pull requests • " .. string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/pulls$");
+            end
+        },
+
+        ["github%.com/[%a%d%-%_%.]+/[%a%d%-%_%.]+%/wiki$"] = {
+            --- github.com/<user>/<repo>/wiki
+            icon = " ",
+            hl = "HelpviewPalette0Fg",
+
+            text = function (_, item)
+                return "Wiki • " .. string.match(item.label, "github%.com/([%a%d%-%_%.]+/[%a%d%-%_%.]+)%/wiki$");
+            end
+        },
+
+        ["developer%.mozilla%.org"] = {
+            priority = -9999,
+
+            icon = "󰖟 ",
+            hl = "HelpviewPalette5Fg"
+        },
+
+        ["w3schools%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette4Fg"
+        },
+
+        ["stackoverflow%.com"] = {
+            priority = -9999,
+
+            icon = "󰓌 ",
+            hl = "HelpviewPalette2Fg"
+        },
+
+        ["reddit%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette2Fg"
+        },
+
+        ["github%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette6Fg"
+        },
+
+        ["gitlab%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette2Fg"
+        },
+
+        ["dev%.to"] = {
+            priority = -9999,
+
+            icon = "󱁴 ",
+            hl = "HelpviewPalette0Fg"
+        },
+
+        ["codepen%.io"] = {
+            priority = 9999,
+
+            icon = " ",
+            hl = "HelpviewPalette6Fg"
+        },
+
+        ["replit%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette2Fg"
+        },
+
+        ["jsfiddle%.net"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette5Fg"
+        },
+
+        ["npmjs%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette0Fg"
+        },
+
+        ["pypi%.org"] = {
+            priority = -9999,
+
+            icon = "󰆦 ",
+            hl = "HelpviewPalette0Fg"
+        },
+
+        ["mvnrepository%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette1Fg"
+        },
+
+        ["medium%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette6Fg"
+        },
+
+        ["linkedin%.com"] = {
+            priority = -9999,
+
+            icon = "󰌻 ",
+            hl = "HelpviewPalette5Fg"
+        },
+
+        ["news%.ycombinator%.com"] = {
+            priority = -9999,
+
+            icon = " ",
+            hl = "HelpviewPalette2Fg"
+        },
+
+        ["neovim%.io/doc/user/.*#%_?.*$"] = {
+            icon = " ",
+            hl = "HelpviewPalette4Fg",
+
+            text = function (_, item)
+                local file, tag = string.match(item.label, "neovim%.io/doc/user/(.*)#%_?(.*)$");
+                --- The actual website seems to show
+                --- _ in the site name so, we won't
+                --- be replacing `_`s with ` `s.
+                file = string.gsub(file, "%.html$", "");
+
+                return string.format("%s(%s) - Neovim docs", utils.normalize_str(file), tag);
+            end
+        },
+        ["neovim%.io/doc/user/.*$"] = {
+            icon = " ",
+            hl = "HelpviewPalette4Fg",
+
+            text = function (_, item)
+                local file = string.match(item.label, "neovim%.io/doc/user/(.*)$");
+                file = string.gsub(file, "%.html$", "");
+
+                return string.format("%s - Neovim docs", utils.normalize_str(file));
+            end
+        },
+
+        ["github%.com/vim/vim"] = {
+            priority = -100,
+
+            icon = " ",
+            hl = "HelpviewPalette4Fg",
+        },
+
+        ["github%.com/neovim/neovim"] = {
+            priority = -100,
+
+            icon = " ",
+            hl = "HelpviewPalette4Fg",
+        },
+
+        ["vim%.org"] = {
+            icon = " ",
+            hl = "HelpviewPalette4Fg",
+        },
+    }
+
+    ---@class url.opts
+    ---
+    --- Priority of a pattern.
+    ---@field priority? integer
+    ---
+    --- Text that will replace the link.
+    ---@field text? fun(buffer: integer, item: vimdoc.__urls): string
+    ---
+    ---@field corner_left? string
+    ---@field padding_left? string
+    ---
+    ---@field icon? string
+    ---
+    ---@field padding_right? string
+    ---@field corner_right? string
+    ---
+    --- Primary highlight group.
+    --- Used by other `*_hl` option(s) when
+    --- a value isn't given.
+    ---@field hl? string
+    ---
+    ---@field corner_left_hl? string
+    ---@field padding_left_hl? string
+    ---
+    ---@field icon_hl? string
+    ---
+    ---@field padding_right_hl? string
+    ---@field corner_right_hl? string
+    ["neovim%.io/doc/user/.*#%_?.*$"] = {
+        icon = " ",
+        hl = "HelpviewPalette4Fg",
+
+        text = function (_, item)
+            local file, tag = string.match(item.label, "neovim%.io/doc/user/(.*)#%_?(.*)$");
+            --- The actual website seems to show
+            --- _ in the site name so, we won't
+            --- be replacing `_`s with ` `s.
+            file = string.gsub(file, "%.html$", "");
+
+            return string.format("%s(%s) - Neovim docs", utils.normalize_str(file), tag);
+        end
+    }
+<
+
+Item type definition(for custom renderers),
+
+>lua
+    ---@class vimdoc.__url
+    ---
+    ---@field class "vimdoc_url",
+    ---@field label string
+    ---
+    ---@field text string[],
+    ---@field range node.range
+    M.url = {
+        class = "vimdoc_url",
+        label = "https://neovim.io/doc/user/api.html#api-definitions",
+        range = {
+            col_end = 51,
+            col_start = 0,
+            row_end = 1,
+            row_start = 1
+        },
+        text = { "https://neovim.io/doc/user/api.html#api-definitions" }
+    };
+<
+
+vim:ft=help:tw=78:

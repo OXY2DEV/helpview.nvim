@@ -30,7 +30,7 @@ local M = {};
 ---@field keycodes? vimdoc.keycodes
 ---
 --- Configuration for vim:modeline:.
----@field modeline? vimdoc.modeline
+---@field modelines? vimdoc.modelines
 ---
 --- Configuration for Note.
 ---@field notes? vimdoc.notes
@@ -261,7 +261,7 @@ local M = {};
 
 
 --- Configuration for Vim modeline.
----@class vimdoc.modeline
+---@class vimdoc.modelines
 ---
 --- When `false`, modeline won't be rendered.
 ---@field enable? boolean
@@ -339,7 +339,7 @@ local M = {};
 ---@field priority? integer
 ---
 --- Text that will replace the link.
----@field text? fun(buffer: integer, item: vimdoc.__urls): string
+---@field text? fun(buffer: integer, item: vimdoc.__url): string
 ---
 ---@field corner_left? string
 ---@field padding_left? string

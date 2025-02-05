@@ -1,0 +1,140 @@
+*helpview.nvim-migration*                   Migration guides for helpview.nvim
+
+▌ Tip:
+▌ Run `:checkhealth helpview` with your old config and copy the shown
+▌ config(near the bottom) to easily migrate from and old version.
+
+------------------------------------------------------------------------------
+v1.x → v2.x
+
+>diff
+    {
+    -   modes = { "n", "no", "c" },
+    -   hybrid_modes = nil,
+    -   buf_ignore = nil,
+    -   callbacks = {
+    -       on_enable = nil,
+    -       on_disable = nil,
+
+    -       on_mode_change = nil,
+    -   },
+
+        highlight_groups = {},
+
+    -   arguments = {},
+
+    -   code_blocks = {},
+
+    -   group_names = {},
+
+    -   headings = {},
+    -   horizontal_rules = {},
+
+    -   inline_codes = {},
+    -   keycodes = {},
+    -   mention_links = {},
+
+    -   modelines = {
+    -       style = "expanded",
+
+    -       icon_hl = nil,
+    -       selector_hl = nil,
+    -       surround_hl = nil,
+
+    -       option_hl = nil
+    -   },
+
+    -   notes = {},
+    -   option_links = {},
+
+    -   tag_links = {},
+    -   title = {},
+
+    +   preview = {
+    +       modes = {},
+    +       hybrid_modes = {},
+
+    +       filetypes = {},
+    +       ignore_buftypes = {},
+    +       ignore_previews = {},
+
+    +       callbacks = {
+    +           on_enable = nil,
+    +           on_disable = nil,
+
+    +           on_attach = nil,
+    +           on_detach = nil,
+
+    +           on_hybrid_enable = nil,
+    +           on_hybrid_disable = nil,
+    +       }
+    +   },
+
+    +   vimdoc = {
+    +       arguments = {},
+    +       code_blocks = {},
+
+    +       highlight_groups = {},
+
+    +       headings = {},
+    +       horizontal_rules = {},
+
+    +       inline_codes = {},
+    +       keycodes = {},
+    +       taglinks = {},
+
+    +       modelines = {},
+
+    +       notes = {},
+    +       optionlinks = {},
+
+    +       tag_links = {},
+    +   }
+    }
+<
+
+`v2` introduces the following breaking changes,
+
+    • `modes` has been moved to `preview`.
+
+    • `buf_ignore` has been renamed to `ignore_buftypes` and moved to
+      `preview`.
+
+    • `callbacks` has been moved to `preview`.
+
+    • `arguments` has been moved to `vimdoc`.
+
+    • `code_blocks` has been moved to `vimdoc`.
+
+    • `group_names` has been renamed to `highlight_groups` and moved to
+      `vimdoc`.
+
+    • `headings` has been moved to `vimdoc`.
+
+    • `horizontal_rules` has been moved to `vimdoc`.
+
+    • `inline_codes` has been moved to `vimdoc`.
+
+    • `keycodes` has been moved to `vimdoc`.
+
+    • `mention_links` has been renamed to `taglinks` and moved to
+      `vimdoc`.
+
+    • `modelines` has been completely change and has been moved to
+      `vimdoc`.
+
+    • `notes` has been moved to `vimdoc`.
+
+    • `option_links` has been renamed to `optionlinks` and moved to
+      `vimdoc`.
+
+    • `tag_links` has been renamed to `taglinks` and moved to
+      `vimdoc`.
+
+    • `title` has been removed.
+
+    • `horizontal_rules` has been moved to `vimdoc`.
+
+    • `horizontal_rules` has been moved to `vimdoc`.
+
+vim:ft=help:tw=78:

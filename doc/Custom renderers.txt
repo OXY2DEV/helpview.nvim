@@ -1,0 +1,48 @@
+*helpview.nvim-renderers*                   Custom renderers for helpview.nvim
+
+>lua
+    require("helpview").setup({
+        renderers = {
+            --- Custom renderer for YAML properties.
+            ---@param ns integer Namespace to use for extmarks.
+            ---@param buffer integer Buffer where 
+            ---@param item vimdoc.__code_block The parsed version of a node.
+            vimdoc_code_block = function (ns, buffer, item)
+                --- Do custom stuff.
+            end
+        }
+    })
+<
+
+The structure and data of an `item` can be found in their option's wiki
+section.
+
+For example, to see the one for `vimdoc_heading` head over to
+`Vimdoc options.md` in the wiki and go to the `headings` section.
+
+You will find the definition of item inside the drop-down.
+
+▌ Tip:
+▌ I highly recommend checking out the default renderers in
+▌ `lua/helpview/renderers` first.
+
+Currently supported items are,
+
+    • vimdoc
+
+        • vimdoc_argument
+        • vimdoc_code_block
+        • vimdoc_heading
+        • vimdoc_hl (highlight group name)
+        • vimdoc_hr (horizontal rules)
+        • vimdoc_inline_code
+        • vimdoc_keycode
+        • vimdoc_modeline
+        • vimdoc_note
+        • vimdoc_optionlink
+        • vimdoc_tag
+        • vimdoc_taglink
+        • vimdoc_url
+
+
+vim:ft=help:tw=78:

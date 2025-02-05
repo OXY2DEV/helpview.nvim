@@ -48,6 +48,42 @@ local M = {};
 ---@field splitview_winopts? table
 
 
+--- Controls which items are affected by `hybrid_mode`.
+---@class preview.ignore
+---
+---@field vimdoc? ignore_vimdoc[]
+
+
+---@alias ignore_vimdoc
+---| "arguments"
+---| "code_blocks"
+---| "headings"
+---| "highlight_groups"
+---| "horizontal_rules"
+---| "inline_codes"
+---| "keycodes"
+---| "modelines"
+---| "notes"
+---| "optionlinks"
+---| "tags"
+---| "taglinks"
+---| "urls"
+---
+---| "!arguments"
+---| "!code_blocks"
+---| "!headings"
+---| "!highlight_groups"
+---| "!horizontal_rules"
+---| "!inline_codes"
+---| "!keycodes"
+---| "!modelines"
+---| "!notes"
+---| "!optionlinks"
+---| "!tags"
+---| "!taglinks"
+---| "!urls"
+
+
 ---@class preview.callbacks
 ---
 --- Called when attaching to a buffer.

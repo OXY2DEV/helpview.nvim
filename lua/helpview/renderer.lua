@@ -13,18 +13,18 @@ renderer.__filter_cache = {
 renderer.option_maps = {
 	---+${lua}
 	vimdoc = {
-		headings = { "vimdoc_heading" },
-		modelines = { "vimdoc_modeline" },
-		code_blocks = { "vimdoc_code_block" },
-		inline_codes = { "vimdoc_inline_code" },
 		arguments = { "vimdoc_argument" },
-		notes = { "vimdoc_note" },
-		keycodes = { "vimdoc_keycode" },
-		option_links = { "vimdoc_optionlink" },
-		tag_links = { "vimdoc_taglink" },
-		tags = { "vimdoc_tag" },
+		headings = { "vimdoc_heading" },
+		code_blocks = { "vimdoc_code_block" },
 		highlight_groups = { "vimdoc_hl" },
 		horizontal_rules = { "vimdoc_hr" },
+		inline_codes = { "vimdoc_inline_code" },
+		keycodes = { "vimdoc_keycode" },
+		modelines = { "vimdoc_modeline" },
+		notes = { "vimdoc_note" },
+		optionlinks = { "vimdoc_optionlink" },
+		tags = { "vimdoc_tag" },
+		tag_links = { "vimdoc_taglink" },
 		urls = { "vimdoc_url" }
 	}
 	---_

@@ -501,6 +501,56 @@ spec.default = {
 				icon = " ",
 				hl = "HelpviewPalette4Fg",
 			},
+
+			["luals%.github%.io/wiki/?.*$"] = {
+				icon = " ",
+				hl = "HelpviewPalette5Fg",
+
+				text = function (_, item)
+					if string.match(item.label, "luals%.github%.io/wiki/(.-)/#(.+)$") then
+						local page_mappings = {
+							annotations = {
+								["as"] = "@as",
+								["alias"] = "@alias",
+								["async"] = "@async",
+								["cast"] = "@cast",
+								["class"] = "@class",
+								["deprecated"] = "@deprecated",
+								["diagnostic"] = "@diagnostic",
+								["enum"] = "@enum",
+								["field"] = "@field",
+								["generic"] = "@generic",
+								["meta"] = "@meta",
+								["module"] = "@module",
+								["nodiscard"] = "@nodiscard",
+								["operator"] = "@operator",
+								["overload"] = "@overload",
+								["package"] = "@package",
+								["param"] = "@param",
+								["see"] = "@see",
+								["source"] = "@source",
+								["type"] = "@type",
+								["vaarg"] = "@vaarg",
+								["version"] = "@version"
+							}
+						};
+
+						local page, section = string.match(item.label, "luals%.github%.io/wiki/(.-)/#(.+)$");
+
+						if page_mappings[page] and page_mappings[page][section] then
+							section = page_mappings[page][section];
+						else
+							section = utils.normalize_str(string.gsub(section, "%-", " "));
+						end
+
+						return string.format("%s(%s) | Lua Language Server", utils.normalize_str(page), section);
+					elseif string.match(item.label, "") then
+						local page = string.match(item.label, "luals%.github%.io/wiki/(.-)/?$");
+
+						return string.format("%s | Lua Language Server", utils.normalize_str(page));
+					end
+				end
+			},
 		}
 	},
 

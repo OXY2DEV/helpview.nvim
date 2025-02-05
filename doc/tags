@@ -1,10 +1,45 @@
-!_TAG_FILE_ENCODING	utf-8	//
-helpview.nvim	helpview.txt	/*helpview.nvim*
-helpview.nvim-commands	helpview.txt	/*helpview.nvim-commands*
-helpview.nvim-config	helpview.txt	/*helpview.nvim-config*
-helpview.nvim-features	helpview.txt	/*helpview.nvim-features*
-helpview.nvim-hls	helpview.txt	/*helpview.nvim-hls*
-helpview.nvim-i-lazy	helpview.txt	/*helpview.nvim-i-lazy*
-helpview.nvim-i-minideps	helpview.txt	/*helpview.nvim-i-minideps*
-helpview.nvim-install	helpview.txt	/*helpview.nvim-install*
-helpview.nvim-requirements	helpview.txt	/*helpview.nvim-requirements*
+buffer	home.txt	/*buffer*
+helpview.nvim	home.txt	/*helpview.nvim*
+helpview.nvim-commands	home.txt	/*helpview.nvim-commands*
+helpview.nvim-hl	home.txt	/*helpview.nvim-hl*
+helpview.nvim-migration	Migration guides.txt	/*helpview.nvim-migration*
+helpview.nvim-preview	Preview options.txt	/*helpview.nvim-preview*
+helpview.nvim-preview.callbacks	Preview options.txt	/*helpview.nvim-preview.callbacks*
+helpview.nvim-preview.condition	Preview options.txt	/*helpview.nvim-preview.condition*
+helpview.nvim-preview.debounce	Preview options.txt	/*helpview.nvim-preview.debounce*
+helpview.nvim-preview.draw_range	Preview options.txt	/*helpview.nvim-preview.draw_range*
+helpview.nvim-preview.edit_range	Preview options.txt	/*helpview.nvim-preview.edit_range*
+helpview.nvim-preview.enable	Preview options.txt	/*helpview.nvim-preview.enable*
+helpview.nvim-preview.enable_hybrid_mode	Preview options.txt	/*helpview.nvim-preview.enable_hybrid_mode*
+helpview.nvim-preview.filetypes	Preview options.txt	/*helpview.nvim-preview.filetypes*
+helpview.nvim-preview.hybrid_modes	Preview options.txt	/*helpview.nvim-preview.hybrid_modes*
+helpview.nvim-preview.icon_provider	Preview options.txt	/*helpview.nvim-preview.icon_provider*
+helpview.nvim-preview.ignore_buftypes	Preview options.txt	/*helpview.nvim-preview.ignore_buftypes*
+helpview.nvim-preview.ignore_previews	Preview options.txt	/*helpview.nvim-preview.ignore_previews*
+helpview.nvim-preview.linewise_hybrid_mode	Preview options.txt	/*helpview.nvim-preview.linewise_hybrid_mode*
+helpview.nvim-preview.max_buf_lines	Preview options.txt	/*helpview.nvim-preview.max_buf_lines*
+helpview.nvim-preview.modes	Preview options.txt	/*helpview.nvim-preview.modes*
+helpview.nvim-preview.overlay_winopts	Preview options.txt	/*helpview.nvim-preview.overlay_winopts*
+helpview.nvim-preview.preview_winopts	Preview options.txt	/*helpview.nvim-preview.preview_winopts*
+helpview.nvim-preview.splitview_winopts	Preview options.txt	/*helpview.nvim-preview.splitview_winopts*
+helpview.nvim-renderers	Custom renderers.txt	/*helpview.nvim-renderers*
+helpview.nvim-toc	home.txt	/*helpview.nvim-toc*
+helpview.nvim-vimdoc	Vimdoc options.txt	/*helpview.nvim-vimdoc*
+helpview.nvim-vimdoc.arguments	Vimdoc options.txt	/*helpview.nvim-vimdoc.arguments*
+helpview.nvim-vimdoc.code_blocks	Vimdoc options.txt	/*helpview.nvim-vimdoc.code_blocks*
+helpview.nvim-vimdoc.enable	Vimdoc options.txt	/*helpview.nvim-vimdoc.enable*
+helpview.nvim-vimdoc.headings	Vimdoc options.txt	/*helpview.nvim-vimdoc.headings*
+helpview.nvim-vimdoc.highlight_groups	Vimdoc options.txt	/*helpview.nvim-vimdoc.highlight_groups*
+helpview.nvim-vimdoc.horizontal_rules	Vimdoc options.txt	/*helpview.nvim-vimdoc.horizontal_rules*
+helpview.nvim-vimdoc.inline_codes	Vimdoc options.txt	/*helpview.nvim-vimdoc.inline_codes*
+helpview.nvim-vimdoc.keycodes	Vimdoc options.txt	/*helpview.nvim-vimdoc.keycodes*
+helpview.nvim-vimdoc.modelines	Vimdoc options.txt	/*helpview.nvim-vimdoc.modelines*
+helpview.nvim-vimdoc.notes	Vimdoc options.txt	/*helpview.nvim-vimdoc.notes*
+helpview.nvim-vimdoc.optionlinks	Vimdoc options.txt	/*helpview.nvim-vimdoc.optionlinks*
+helpview.nvim-vimdoc.taglinks	Vimdoc options.txt	/*helpview.nvim-vimdoc.taglinks*
+helpview.nvim-vimdoc.tags	Vimdoc options.txt	/*helpview.nvim-vimdoc.tags*
+helpview.nvim-vimdoc.urls	Vimdoc options.txt	/*helpview.nvim-vimdoc.urls*
+only	Vimdoc options.txt	/*only*
+raw	Preview options.txt	/*raw*
+sub-commands	home.txt	/*sub-commands*
+tag-1	Vimdoc options.txt	/*tag-1*

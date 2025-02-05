@@ -1,0 +1,190 @@
+*helpview.nvim*                 A hackable & "fancy" vimdoc viewer for Neovim.
+
+▌ Note:
+▌ This wiki assumes you have basic understanding of `LuaCATS` annotations.
+▌ If you don't, check out https://luals.github.io/wiki/annotations/#documenting-types
+
+==============================================================================
+📚 Wiki files                                              *helpview.nvim-toc*
+
+ 🔄 Migration guide ............................... |helpview.nvim-migration|
+ 💻 Developer docs ...................................... |helpview.nvim-dev|
+ 🌟 Custom renderers .............................. |helpview.nvim-renderers|
+
+ 🔭 Preview options ................................. |helpview.nvim-preview|
+
+ 🧊 Vimdoc options ................................... |helpview.nvim-vimdoc|
+
+==============================================================================
+🎇 Commands                                           *helpview.nvim-commands*
+
+This plugin follows the *sub-commands* approach for creating commands. There
+is only a single `:Helpview` command.
+
+It comes with the following sub-commands,
+
+▌ Note:
+▌ When no sub-command name is provided(or an invalid sub-command is used)
+▌ `:Helpview` will run `:Helpview Toggle`.
+
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Sub-command  ┃ Arguments           ┃ Description                           ┃
+┗━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  `Start`        none                  Allows attaching to new buffers.
+  `Stop`         none                  Prevents attaching to new buffers.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `attach`       buffer, integer       Attaches to buffer.
+  `detach`       buffer, integer       Detaches from buffer.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `Enable`       none                  Enables preview globally.
+  `Disable`      none                  Disables preview globally.
+  `Toggle`       none                  Toggles preview globally.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `enable`       buffer, integer       Enables preview for buffer.
+  `disable`      buffer, integer       Disables preview for buffer.
+  `toggle`       buffer, integer       Toggles preview for buffer.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `splitOpen`    buffer, integer       Opens splitview for buffer.
+  `splitClose`   none                  Closes any open splitview.
+  `splitToggle`  none                  Toggles splitview.
+  `splitRedraw`  none                  Updates splitview contents.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `Render`       none                  Updates preview of all active buffers.
+  `Clear`        none                  Clears preview of all active buffer.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `render`       buffer, integer       Renders preview for buffer.
+  `clear`        buffer, integer       Clears preview for buffer.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `toggleAll`    none                  Deprecated version of `Toggle`.
+  `enableAll`    none                  Deprecated version of `Enable`.
+  `disableAll`   none                  Deprecated version of `Disable`.
+ —————————————— ————————————————————— ———————————————————————————————————————
+  `traceExport`  none                  Exports trace logs to `trace.txt`.
+  `traceShow`    none                  Shows trace logs in a window.
+ ────────────── ───────────────────── ───────────────────────────────────────
+
+▌ Tip:
+▌ *buffer* defaults to the current buffer. So, you can run commands on the
+▌ current buffer without providing the buffer.
+▌ >lua
+    :Helpview toggle "Toggles preview of the current buffer.
+<
+
+==============================================================================
+🎨 Highlight groups                                         *helpview.nvim-hl*
+
+`helpgiew.nvim` creates a number of primary highlight groups that are used
+by most of the decorations.
+
+▌ Important:
+▌ These groups are all generated during runtime and as such their colors
+▌ may look different.
+
+If you want to create your own dynamic highlight groups or modify existing
+ones, see the [custom highlight groups](placeholder) section.
+
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Highlight group      ┃ Generated from                           ┃ Default                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  HelpviewPalette0       Normal(bg) + Comment(fg)                   fg: `#9399b2` bg: `#35374a`
+  HelpviewPalette0Fg     Comment(fg)                                fg: `#9399b2`
+  HelpviewPalette0Bg     Normal(bg) + Comment(fg)                   bg: `#35374a`
+  HelpviewPalette0Sign   Normal(bg) + Comment(fg), LineNr(bg)       fg: `#9399b2`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette1       Normal(bg) + markdownH1(fg)                fg: `#f38ba8` bg: `#4d3649`
+  HelpviewPalette1Fg     markdownH1(fg)                             fg: `#f38ba8`
+  HelpviewPalette1Bg     Normal(bg) + markdownH1(fg)                bg: `#4d3649`
+  HelpviewPalette1Sign   Normal(bg) + markdownH1(fg), LineNr(bg)    fg: `#f38ba8`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette2       Normal(bg) + markdownH2(fg)                fg: `#f9b387` bg: `#4d3d43`
+  HelpviewPalette2Fg     markdownH2(fg)                             fg: `#f9b387`
+  HelpviewPalette2Bg     Normal(bg) + markdownH2(fg)                bg: `#4d3d43`
+  HelpviewPalette2Sign   Normal(bg) + markdownH2(fg), LineNr(bg)    fg: `#f9b387`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette3       Normal(bg) + markdownH3(fg)                fg: `#f9e2af` bg: `#4c474b`
+  HelpviewPalette3Fg     markdownH3(fg)                             fg: `#f9e2af`
+  HelpviewPalette3Bg     Normal(bg) + markdownH3(fg)                bg: `#4c474b`
+  HelpviewPalette3Sign   Normal(bg) + markdownH3(fg), LineNr(bg)    fg: `#f9e2af`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette4       Normal(bg) + markdownH4(fg)                fg: `#a6e3a1` bg: `#3c4948`
+  HelpviewPalette4Fg     markdownH4(fg)                             fg: `#a6e3a1`
+  HelpviewPalette4Bg     Normal(bg) + markdownH4(fg)                bg: `#3c4948`
+  HelpviewPalette4Sign   Normal(bg) + markdownH4(fg), LineNr(bg)    fg: `#a6e3a1`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette5       Normal(bg) + markdownH5(fg)                fg: `#74c7ec` bg: `#314358`
+  HelpviewPalette5Fg     markdownH5(fg)                             fg: `#74c7ec`
+  HelpviewPalette5Bg     Normal(bg) + markdownH5(fg)                bg: `#314358`
+  HelpviewPalette5Sign   Normal(bg) + markdownH5(fg), LineNr(bg)    fg: `#74c7ec`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette6       Normal(bg) + markdownH6(fg)                fg: `#b4befe` bg: `#3c405b`
+  HelpviewPalette6Fg     markdownH6(fg)                             fg: `#b4befe`
+  HelpviewPalette6Bg     Normal(bg) + markdownH6(fg)                bg: `#3c405b`
+  HelpviewPalette6Sign   Normal(bg) + markdownH6(fg), LineNr(bg)    fg: `#b4befe`
+  ————————————————————   ————————————————————————————————————————   ———————————————————————————
+  HelpviewPalette7       Normal(bg) + @conditional(fg)              fg: `#cba6f7` bg: `#403b5a`
+  HelpviewPalette7Fg     @conditional(fg)                           fg: `#cba6f7`
+  HelpviewPalette7Bg     Normal(bg) + @conditional(fg)              bg: `#403b5a`
+  HelpviewPalette7Sign   Normal(bg) + @conditional(fg), LineNr(bg)  fg: `#cba6f7`
+
+
+▌ The source highlight group's values are turned into `Lab` color-space and
+▌ then mixed to reduce unwanted results.
+
+These groups are then used as links by other groups responsible for various
+preview elements,
+
+▌ Note:
+▌ These groups exist for the sake of backwards compatibility and ease of use.
+▌
+▌ You will see something like `fg: Normal`, it means the `fg` of Normal was
+▌ used as the `fg` of that group.
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Highlight group           ┃ value                                    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  HelpviewCode                bg*: `normal` ± 5%(L)
+  HelpviewCodeInfo            bg*: `normal` ± 5%(L), fg: `comment`
+  HelpviewCodeFg              fg*: `normal` ± 5%(L)
+  HelpviewInlineCode          fg*: `normal` ± 10%(L)
+  —————————————————————————   ————————————————————————————————————————
+  HelpviewIcon0               link**: `HelpviewPalette0Fg`
+  HelpviewIcon1               link**: `HelpviewPalette1Fg`
+  HelpviewIcon2               link**: `HelpviewPalette5Fg`
+  HelpviewIcon3               link**: `HelpviewPalette4Fg`
+  HelpviewIcon4               link**: `HelpviewPalette3Fg`
+  HelpviewIcon5               link**: `HelpviewPalette2Fg`
+  —————————————————————————   ————————————————————————————————————————
+  HelpviewGradient0           fg: `Normal`
+  HelpviewGradient1           fg***: `lerp(Normal, Title, 1/9)`
+  HelpviewGradient2           fg***: `lerp(Normal, Title, 2/9)`
+  HelpviewGradient3           fg***: `lerp(Normal, Title, 3/9)`
+  HelpviewGradient4           fg***: `lerp(Normal, Title, 4/9)`
+  HelpviewGradient5           fg***: `lerp(Normal, Title, 5/9)`
+  HelpviewGradient6           fg***: `lerp(Normal, Title, 6/9)`
+  HelpviewGradient7           fg***: `lerp(Normal, Title, 7/9)`
+  HelpviewGradient8           fg***: `lerp(Normal, Title, 8/9)`
+  HelpviewGradient9           fg: `Title`
+
+
+▌ * = The color is converted to HSL and it's luminosity(L) is
+▌ increased/decreased by the specified amount.
+▌
+▌ ** = The background color of `HelpviewCode` is added to the groups.
+▌
+▌ *** = Linearly interpolated value between 2 highlight groups `fg`.
+
+
+There are also highlight groups that are made using the default highlight
+groups,
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Highlight group           ┃ Inherited from                           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  HelpviewTaglink             @markup.link.vimdoc
+  HelpviewTag                 @label.vimdoc
+  HelpviewTag                 @label.vimdoc
+  HelpviewOptionlink          @markup.link.vimdoc
+  HelpviewKeycode             @string.special.vimdoc
+  HelpviewArgument            @variable.parameter.vimdoc
+
+vim:ft=help:nospell:tw=78:
