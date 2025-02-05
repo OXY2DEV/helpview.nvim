@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/OXY2DEV/helpview.nvim/compare/v2.0.0...v2.0.1) (2025-02-05)
+
+
+### Bug Fixes
+
+* **trace:** Added missing traces ([8ca31bd](https://github.com/OXY2DEV/helpview.nvim/commit/8ca31bddd956c87d95b3478f3904b37049d73f15))
+
 ## [2.0.0](https://github.com/OXY2DEV/helpview.nvim/compare/v1.1.0...v2.0.0) (2025-02-05)
 
 
