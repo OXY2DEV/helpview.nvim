@@ -8,6 +8,8 @@
 <img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/repo/helpview-2.png">
 <img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/repo/helpview-3.png">
 
+<img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/wiki/hybrid_mode-normal.png">
+
 <!-- Images here -->
 
 ## 📖 Table of contents
