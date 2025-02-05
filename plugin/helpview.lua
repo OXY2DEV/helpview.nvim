@@ -101,7 +101,7 @@ vim.api.nvim_create_autocmd({ "ModeChanged" }, {
 			--- Buffer isn't attached!
 			return;
 		elseif helpview.actions.__is_enabled(buffer) == false then
-			--- Markview disabled on this buffer.
+			--- Helpview disabled on this buffer.
 			helpview.clear(buffer);
 			return;
 		elseif buffer == helpview.state.splitview_source then

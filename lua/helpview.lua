@@ -872,7 +872,7 @@ helpview.actions = {
 };
 
 --- Holds various functions that you can run
---- vim `:Markview ...`.
+--- via `:Helpview ...`.
 ---@type { [string]: function }
 helpview.commands = {
 	---+${class}
@@ -953,8 +953,8 @@ helpview.commands = {
 
 	["toggleAll"] = function ()
 		health.notify("deprecation", {
-			option = ":Markview toggleAll",
-			alter = ":Markview Toggle",
+			option = ":Helpview toggleAll",
+			alter = ":Helpview Toggle",
 			silent = true
 		});
 
@@ -962,8 +962,8 @@ helpview.commands = {
 	end,
 	["enableAll"] = function ()
 		health.notify("deprecation", {
-			option = ":Markview enableAll",
-			alter = ":Markview Enable",
+			option = ":Helpview enableAll",
+			alter = ":Helpview Enable",
 			silent = true
 		});
 
@@ -971,8 +971,8 @@ helpview.commands = {
 	end,
 	["disableAll"] = function ()
 		health.notify("deprecation", {
-			option = ":Markview disableAll",
-			alter = ":Markview Disable",
+			option = ":Helpview disableAll",
+			alter = ":Helpview Disable",
 			silent = true
 		});
 
