@@ -1,6 +1,12 @@
 buffer	home.txt	/*buffer*
 helpview.nvim	home.txt	/*helpview.nvim*
 helpview.nvim-commands	home.txt	/*helpview.nvim-commands*
+helpview.nvim-config	home.txt	/*helpview.nvim-config*
+helpview.nvim-dev	Developer documentation.txt	/*helpview.nvim-dev*
+helpview.nvim-dev.functions	Developer documentation.txt	/*helpview.nvim-dev.functions*
+helpview.nvim-dev.manual_previews	Developer documentation.txt	/*helpview.nvim-dev.manual_previews*
+helpview.nvim-dev.states	Developer documentation.txt	/*helpview.nvim-dev.states*
+helpview.nvim-dev.toc	Developer documentation.txt	/*helpview.nvim-dev.toc*
 helpview.nvim-hl	home.txt	/*helpview.nvim-hl*
 helpview.nvim-migration	Migration guides.txt	/*helpview.nvim-migration*
 helpview.nvim-preview	Preview options.txt	/*helpview.nvim-preview*
