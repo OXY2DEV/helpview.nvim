@@ -23,13 +23,20 @@ local M = {};
 ---@field y? integer
 
 
+--- Configuration for `helpview.nvim`.
 ---@class helpview.config
 ---
+--- Preview options.
 ---@field preview? helpview.preview
----@field highlight_groups? table[]
----@field renderers? { [string]: function }
 ---
----@field vimdoc? table
+--- Configuration options for vimdoc.
+---@field vimdoc? helpview.vimdoc
+---
+--- Custom highlight groups.
+---@field highlight_groups? table[]
+---
+--- Custom renderers
+---@field renderers? { [string]: function }
 
 
 return M;

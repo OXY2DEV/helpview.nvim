@@ -98,9 +98,9 @@ local M = {};
 ---@field label_hl? string
 ---
 --- Default line configuration(used for stuff like `diff`).
----@field default { block_hl: string }
+---@field default { block_hl: string | fun(buffer: integer, line: string): string }
 --- Line configuration when the language is `string`.
----@field [string] { block_hl: string }
+---@field [string] { block_hl: string | fun(buffer: integer, line: string): string }
 
 
 --- Configuration for headings.

@@ -7,6 +7,8 @@ local utils = require("helpview.utils");
 spec.default = {
 	---+${lua}
 
+	renderers = {},
+
 	preview = {
 		enable = true,
 		enable_hybrid_mode = true,
@@ -549,6 +551,8 @@ spec.default = {
 						local page = string.match(item.label, "luals%.github%.io/wiki/(.-)/?$");
 
 						return string.format("%s | Lua Language Server", utils.normalize_str(page));
+					else
+						return item.label;
 					end
 				end
 			},
