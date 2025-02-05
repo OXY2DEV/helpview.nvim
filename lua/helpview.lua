@@ -398,6 +398,14 @@ helpview.actions = {
 		---@type function
 		local _f = spec.get({ "preview", "callbacks", callback }, { ignore_enable = true });
 		pcall(_f, ...);
+
+		health.notify("trace", {
+			level = 1,
+			message = {
+				{ "Callback: ", "Special" },
+				{ " " .. callback .. " ", "DiagnosticVirtualTextInfo" }
+			}
+		});
 	end,
 
 	["__is_attached"] = function (buffer)
@@ -553,6 +561,12 @@ helpview.actions = {
 			return;
 		end
 
+		health.notify("trace", {
+			level = 8,
+			message = string.format("Attached: %d", buffer)
+		});
+		health.__child_indent_in();
+
 		local enable = spec.get({ "preview", "enable" }, { fallback = true, ignore_enable = true });
 		local hm_enable = spec.get({ "preview", "enable_hybrid_mode" }, { fallback = true, ignore_enable = true });
 
@@ -581,6 +595,7 @@ helpview.actions = {
 			helpview.clear(buffer);
 		end
 
+		health.__child_indent_de();
 		---_
 	end,
 
@@ -600,11 +615,11 @@ helpview.actions = {
 			return;
 		end
 
-		-- health.notify("trace", {
-		-- 	level = 9,
-		-- 	message = string.format("Detached: %d", buffer)
-		-- });
-		-- health.__child_indent_in();
+		health.notify("trace", {
+			level = 9,
+			message = string.format("Detached: %d", buffer)
+		});
+		health.__child_indent_in();
 
 		--- Execute the attaching autocmd.
 		helpview.actions.__exec_callback("on_detach", buffer, vim.fn.win_findbuf(buffer))
@@ -620,7 +635,7 @@ helpview.actions = {
 
 		--- Clear decorations too!
 		helpview.clear(buffer);
-		-- health.__child_indent_de()
+		health.__child_indent_de()
 		---_
 	end,
 
@@ -643,11 +658,11 @@ helpview.actions = {
 			return;
 		end
 
-		-- health.notify("trace", {
-		-- 	level = 7,
-		-- 	message = string.format("Disabled: %d", buffer)
-		-- });
-		-- health.__child_indent_in();
+		health.notify("trace", {
+			level = 7,
+			message = string.format("Disabled: %d", buffer)
+		});
+		health.__child_indent_in();
 
 		helpview.state.buffer_states[buffer].enable = false;
 		helpview.clear(buffer);
@@ -660,13 +675,13 @@ helpview.actions = {
 		local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
 
 		if vim.list_contains(hybd_modes, mode) == false then
-			-- health.__child_indent_de();
+			health.__child_indent_de();
 			return;
 		end
 
 		--- Execute the attaching autocmd.
 		helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer))
-		-- health.__child_indent_de();
+		health.__child_indent_de();
 		---_
 	end,
 
@@ -688,11 +703,11 @@ helpview.actions = {
 			return;
 		end
 
-		-- health.notify("trace", {
-		-- 	level = 6,
-		-- 	message = string.format("Enabled: %d", buffer)
-		-- });
-		-- health.__child_indent_in();
+		health.notify("trace", {
+			level = 6,
+			message = string.format("Enabled: %d", buffer)
+		});
+		health.__child_indent_in();
 
 		helpview.state.buffer_states[buffer].enable = true;
 
@@ -703,7 +718,7 @@ helpview.actions = {
 		local hybd_modes = spec.get({ "preview", "hybrid_modes" }, { fallback = {}, ignore_enable = true });
 
 		if vim.list_contains(prev_modes, mode) == false then
-			-- health.__child_indent_de();
+			health.__child_indent_de();
 			return;
 		end
 
@@ -713,14 +728,14 @@ helpview.actions = {
 		helpview.actions.__exec_callback("on_enable", buffer, vim.fn.win_findbuf(buffer))
 
 		if vim.list_contains(hybd_modes, mode) == false then
-			-- health.__child_indent_de();
+			health.__child_indent_de();
 			return;
 		end
 
 		--- Execute the attaching autocmd.
 		helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer))
 		--- Execute the autocmd too.
-		-- health.__child_indent_de();
+		health.__child_indent_de();
 		---_
 	end,
 
