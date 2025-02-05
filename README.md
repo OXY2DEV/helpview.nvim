@@ -4,8 +4,9 @@
     A hackable & <i>fancy</i> vimdoc viewer for <code>Neovim</code>.
 </p>
 
-
-
+<img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/repo/helpview-1.png">
+<img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/repo/helpview-2.png">
+<img src="https://github.com/OXY2DEV/helpview.nvim/blob/images/v2/repo/helpview-3.png">
 
 <!-- Images here -->
 
