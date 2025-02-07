@@ -84,7 +84,8 @@ vimdoc.code_block = function (buffer, TSNode, text, range)
 		if range.row_end + 1 > vim.api.nvim_buf_line_count(buffer) - 1 then
 			return use_virt, false;
 		elseif range.col_start == 0 then
-			local bottom = vim.api.nvim_buf_get_lines(buffer, range.row_start - 1, range.row_start, false)[1];
+			local bottom = vim.api.nvim_buf_get_lines(buffer, range.row_end, range.row_end + 1, false)[1];
+
 			return use_virt, bottom:match("^%s*$") == nil;
 		else
 			return use_virt, after:match("^%s*$") == nil;

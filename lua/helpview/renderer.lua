@@ -384,7 +384,7 @@ renderer.get_range = function (content)
 
 	local from, to = nil, nil;
 
-	for lang, lang_items in pairs(content) do
+	for _, lang_items in pairs(content) do
 		for _, item in ipairs(lang_items) do
 			local range = item.range;
 

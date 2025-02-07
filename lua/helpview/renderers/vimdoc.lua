@@ -163,6 +163,19 @@ vimdoc.code_block = function (buffer, item)
 	local decorations = filetypes.get(item.language);
 	local label = { string.format(" %s%s ", decorations.icon, decorations.name), utils.set_hl(config.label_hl or decorations.icon_hl) };
 
+	local function show_tooltip ()
+		if vim.fn.has("nvim-0.11.0") == 0 then
+			-- Only do this on nightly versions
+			return false;
+		else
+			local ft = vim.filetype.match({
+				filename = string.format("example.%s", item.language)
+			});
+
+			return vim.list_contains({ "vim", "lua" }, ft);
+		end
+	end
+
 	if item.top_border[1] == true then
 		--- Virtual line
 		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
@@ -176,11 +189,13 @@ vimdoc.code_block = function (buffer, item)
 				},
 				{
 					label,
+					show_tooltip() == true and { "• Run with 󰌏 g==", "HelpviewCodeInfo" } or { "" },
 					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) }
-				}
+				},
 			} or {
 				{
 					label,
+					show_tooltip() == true and { "• Run with 󰌏 g==", "HelpviewCodeInfo" } or { "" },
 					{ string.rep(" ", vim.o.columns), utils.set_hl(config.border_hl) }
 				}
 			}
@@ -199,7 +214,10 @@ vimdoc.code_block = function (buffer, item)
 			} or nil,
 
 			virt_text_pos = "overlay",
-			virt_text = { label },
+			virt_text = {
+				label,
+				show_tooltip() == true and { "• Run with 󰌏 g==", "HelpviewCodeInfo" } or { "" },
+			},
 			line_hl_group = utils.set_hl(config.border_hl)
 		});
 	end
@@ -1048,6 +1066,9 @@ end
 vimdoc.render = function (buffer, content)
 	---+
 
+	--- Clear the message namespace.
+	vimdoc.__message_clear(buffer, content)
+
 	--- Custom renderers.
 	---@type { [string]: fun(buffer: integer, item: table): nil }
 	local custom_renderers = spec.get({ "renderers" }, { fallback = {} });
@@ -1073,6 +1094,41 @@ vimdoc.render = function (buffer, content)
 	---_
 end
 
+--- Clears help message namespace.
+---@param buffer integer
+---@param content table[]
+vimdoc.__message_clear = function (buffer, content)
+	---+
+
+	--- Map of namespace IDs.
+	---@type { [string]: integer }
+	local namespaces = vim.api.nvim_get_namespaces();
+
+	if not namespaces["nvim.vimdoc.run_message"] then
+		--- Message namespace doesn't exist.
+		--- Abort.
+		return;
+	elseif not package.loaded["helpview.renderer"] or not package.loaded["helpview.renderer"].get_range then
+		--- In case the renderer module isn't available
+		--- just clear everything.
+		vim.api.nvim_buf_clear_namespace(buffer, namespaces["nvim.vimdoc.run_message"], 0, -1);
+	else
+		--- Line range to clear.
+		---@type integer, integer
+		local from, to = package.loaded["helpview.renderer"].get_range({
+			vimdoc = content
+		});
+
+		vim.api.nvim_buf_clear_namespace(buffer, namespaces["nvim.vimdoc.run_message"], from, to);
+	end
+
+	---_
+end
+
+--- Clears preview decorations.
+---@param buffer integer
+---@param from integer | nil
+---@param to integer | nil
 vimdoc.clear = function (buffer, from, to)
 	vim.api.nvim_buf_clear_namespace(buffer, vimdoc.ns, from or 0, to or -1);
 end
