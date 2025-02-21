@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0](https://github.com/OXY2DEV/helpview.nvim/compare/v2.0.1...v2.1.0) (2025-02-21)
+
+
+### Features
+
+* **renderer_vimdoc:** Added support for `?` after arguments ([2841ca3](https://github.com/OXY2DEV/helpview.nvim/commit/2841ca37f5e9a0a527e63500485810f9def3b46a))
+
+
+### Bug Fixes
+
+* **core:** Check if it's possible to attach to a buffer ([2a77c8f](https://github.com/OXY2DEV/helpview.nvim/commit/2a77c8fc2992054fc650fc677ee83a37da5df783)), closes [#22](https://github.com/OXY2DEV/helpview.nvim/issues/22)
+* **renderer_vimdoc:** Fixed compatibility issue with help tips on nightly ([30d3104](https://github.com/OXY2DEV/helpview.nvim/commit/30d3104fc44ea0dc50ccc4a68e7e65e70c34a2a4))
+
 ## [2.0.1](https://github.com/OXY2DEV/helpview.nvim/compare/v2.0.0...v2.0.1) (2025-02-05)
 
 
