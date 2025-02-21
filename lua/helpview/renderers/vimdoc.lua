@@ -76,19 +76,40 @@ vimdoc.argument = function (buffer, item)
 		hl_mode = "combine"
 	});
 
-	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
-		undo_restore = false, invalidate = true,
-		end_col = range.col_end,
-		conceal = "",
+	if string.match(item.text[1], "?$") then
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 2, {
+			undo_restore = false, invalidate = true,
 
-		virt_text_pos = "inline",
-		virt_text = {
-			{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
-			{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
-		},
+			end_col = range.col_end - 1,
+			conceal = "",
+		});
 
-		hl_mode = "combine"
-	});
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end, {
+			undo_restore = false, invalidate = true,
+
+			virt_text_pos = "inline",
+			virt_text = {
+				{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+				{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+			},
+
+			hl_mode = "combine"
+		});
+	else
+		vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_end, range.col_end - 1, {
+			undo_restore = false, invalidate = true,
+			end_col = range.col_end,
+			conceal = "",
+
+			virt_text_pos = "inline",
+			virt_text = {
+				{ config.padding_right or "", utils.set_hl(config.padding_right_hl or config.hl) },
+				{ config.corner_right or "", utils.set_hl(config.corner_right_hl or config.hl) }
+			},
+
+			hl_mode = "combine"
+		});
+	end
 
 	---@type string Added virtual text.
 	local ext = table.concat({

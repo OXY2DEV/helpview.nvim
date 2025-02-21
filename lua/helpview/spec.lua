@@ -396,7 +396,7 @@ spec.default = {
 			},
 
 			["codepen%.io"] = {
-				priority = 9999,
+				priority = -9999,
 
 				icon = " ",
 				hl = "HelpviewPalette6Fg"
