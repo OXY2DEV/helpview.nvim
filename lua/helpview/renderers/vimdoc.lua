@@ -6,6 +6,22 @@ local utils = require("helpview.utils");
 vimdoc.ns = vim.api.nvim_create_namespace("helpview/vimdoc");
 vimdoc.lnum_offsets = {};
 
+local function has_decorations(config)
+	if (config.corner_left ~= nil and config.corner_left ~= "") then
+		return true;
+	elseif (config.padding_left ~= nil and config.padding_left ~= "") then
+		return true;
+	elseif (config.icon ~= nil and config.icon ~= "") then
+		return true;
+	elseif (config.padding_right ~= nil and config.padding_right ~= "") then
+		return true;
+	elseif (config.corner_right ~= nil and config.corner_right ~= "") then
+		return true;
+	else
+		return false;
+	end
+end
+
 vimdoc.__fix_indent = function (buffer, item, offset)
 	---+
 
@@ -121,7 +137,9 @@ vimdoc.argument = function (buffer, item)
 		config.corner_right or ""
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	end
 
 	if not config.hl then
 		return;
@@ -441,7 +459,9 @@ vimdoc.hl = function (buffer, item)
 		hl_mode = "combine"
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	end
 
 	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
 		undo_restore = false, invalidate = true,
@@ -634,7 +654,9 @@ vimdoc.keycode = function (buffer, item)
 		config.corner_right or ""
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	end
 
 	if not config.hl then
 		return;
@@ -843,7 +865,9 @@ vimdoc.optionlink = function (buffer, item)
 		config.corner_right or ""
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+	end
 
 	if not config.hl then
 		return;
@@ -918,7 +942,9 @@ vimdoc.tag = function (buffer, item)
 		config.corner_right or ""
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	end
 
 	if not config.hl then
 		return;
@@ -993,7 +1019,9 @@ vimdoc.taglink = function (buffer, item)
 		config.corner_right or ""
 	});
 
-	vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	if has_decorations(config) then
+		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext) - 2);
+	end
 
 	if not config.hl then
 		return;
