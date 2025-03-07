@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/OXY2DEV/helpview.nvim/compare/v2.1.0...v2.1.1) (2025-03-07)
+
+
+### Bug Fixes
+
+* **renderer_vimdoc:** Spacing fixes are now only applied when decorations are added ([d2d1294](https://github.com/OXY2DEV/helpview.nvim/commit/d2d129423e2cbea50cb395f50223d99316d22b46)), closes [#26](https://github.com/OXY2DEV/helpview.nvim/issues/26)
+
 ## [2.1.0](https://github.com/OXY2DEV/helpview.nvim/compare/v2.0.1...v2.1.0) (2025-02-21)
 
 
