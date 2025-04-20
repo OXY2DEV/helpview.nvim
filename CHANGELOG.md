@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/OXY2DEV/helpview.nvim/compare/v2.1.1...v2.1.2) (2025-04-20)
+
+
+### Bug Fixes
+
+* **renderer_vimdoc:** Fixed an issue with `enable` being matched as a config ([bdc38fa](https://github.com/OXY2DEV/helpview.nvim/commit/bdc38fa5bdb915d5091006ce19b87d12dc777b26)), closes [#28](https://github.com/OXY2DEV/helpview.nvim/issues/28)
+
 ## [2.1.1](https://github.com/OXY2DEV/helpview.nvim/compare/v2.1.0...v2.1.1) (2025-03-07)
 
 
