@@ -70,7 +70,9 @@ vimdoc.argument = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -612,7 +614,9 @@ vimdoc.keycode = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -764,7 +768,9 @@ vimdoc.note = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -823,7 +829,9 @@ vimdoc.optionlink = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -896,7 +904,9 @@ vimdoc.tag = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.tag, {});
+	local config = utils.match(main_config, item.tag, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -973,7 +983,9 @@ vimdoc.taglink = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -1050,7 +1062,9 @@ vimdoc.url = function (buffer, item)
 	end
 
 	---@type vimdoc.generic?
-	local config = utils.match(main_config, item.label, {});
+	local config = utils.match(main_config, item.label, {
+		ignore_keys = { "enable", "default" }
+	});
 	local range = item.range;
 
 	if not config then
@@ -1133,6 +1147,7 @@ vimdoc.render = function (buffer, content)
 		end
 
 		if success == false then
+			vimdoc[item.class:gsub("^vimdoc%_", "")](buffer, item)
 			require("helpview.health").notify("trace", {
 				level = 4,
 				message = error
