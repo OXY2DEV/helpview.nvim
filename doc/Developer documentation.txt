@@ -1,4 +1,4 @@
-*helpview.nvim-dev*                                    Developer documentations
+*helpview.nvim-dev*                                   Developer documentations
 
                  Mostly for extending plugin functionalities.
 
