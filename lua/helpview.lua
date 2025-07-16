@@ -1,4 +1,6 @@
+--- Decorations for Vim help files.
 local helpview = {};
+
 local health = require("helpview.health");
 local spec = require("helpview.spec");
 
@@ -17,8 +19,6 @@ helpview.state = {
 --- A stricter version of the default
 --- renderer.
 helpview.strict_render = {
-	---+${lua}
-
 	--- Buffers that have been rendered.
 	---@type integer[]
 	on = {},
@@ -71,14 +71,10 @@ helpview.strict_render = {
 			end
 		end
 	end
-
-	---_
 };
 
 --- Cleans up any invalid buffers.
 helpview.clean = function ()
-	---+${lua}
-
 	--- Should a buffer be cleaned?
 	---@param buffer integer?
 	---@return boolean
@@ -104,15 +100,12 @@ helpview.clean = function ()
 			end
 		end
 	end
-
-	---_
 end
 
 --- Checks if {buffer} is safe.
 ---@param buffer integer?
 ---@return boolean
 helpview.buf_is_safe = function (buffer)
-	---+
 	if type(buffer) ~= "number" then
 		return false;
 	elseif vim.api.nvim_buf_is_valid(buffer) == false then
@@ -122,14 +115,12 @@ helpview.buf_is_safe = function (buffer)
 	end
 
 	return true;
-	---_
 end
 
 --- Checks if {window} is safe.
 ---@param window integer?
 ---@return boolean
 helpview.win_is_safe = function (window)
-	---+
 	if type(window) ~= "number" then
 		return false;
 	elseif vim.api.nvim_win_is_valid(window) == false then
@@ -139,14 +130,12 @@ helpview.win_is_safe = function (window)
 	end
 
 	return true;
-	---_
 end
 
 --- Can we attach to {buffer}?
 ---@param buffer integer?
 ---@return boolean
 helpview.can_attach = function (buffer)
-	---+
 	helpview.clean();
 
 	if helpview.buf_is_safe(buffer) == false then
@@ -156,14 +145,12 @@ helpview.can_attach = function (buffer)
 	end
 
 	return true;
-	---_
 end
 
 --- Can we draw on {buffer}?
 ---@param buffer integer
 ---@return boolean
 helpview.can_draw = function (buffer)
-	---+
 	helpview.clean();
 
 	if helpview.buf_is_safe(buffer) == false then
@@ -173,26 +160,19 @@ helpview.can_draw = function (buffer)
 	end
 
 	return true;
-	---_
 end
 
 --- Clears all previews from {buffer}.
 ---@param buffer integer
 helpview.clear = function (buffer)
-	---+
-
 	buffer = buffer or vim.api.nvim_get_current_buf();
 	require("helpview.renderer").clear(buffer, 0, -1);
-
-	---_
 end
 
 --- Renders preview to {buffer}.
 ---@param buffer integer
 ---@param state? { enable: boolean, hybrid_mode: boolean }
 helpview.render = function (buffer, state)
-	---+${lua}
-
 	---@type integer
 	buffer = buffer or vim.api.nvim_get_current_buf();
 
@@ -292,13 +272,10 @@ helpview.render = function (buffer, state)
 			end
 		end
 	end
-	---_
 end
 
 --- Updates cursor position in splitview.
 helpview.update_splitview_cursor = function ()
-	---+${lua}
-
 	local utils = require("helpview.utils");
 	local buffer = helpview.state.splitview_source;
 
@@ -321,14 +298,10 @@ helpview.update_splitview_cursor = function ()
 
 	local cursor = vim.api.nvim_win_get_cursor(utils.buf_getwin(buffer));
 	pcall(vim.api.nvim_win_set_cursor, pre_win, cursor);
-
-	---_
 end
 
 --- Renders splitview.
 helpview.splitview_render = function ()
-	---+${lua}
-
 	local utils = require("helpview.utils");
 	local buffer = helpview.state.splitview_source;
 
@@ -382,14 +355,11 @@ helpview.splitview_render = function ()
 		enable = true,
 		hybrid_mode = false
 	});
-	---_
 end
 
 --- Actions for helpview.
 ---@type { [string]: function }
 helpview.actions = {
-	---+
-
 	["__exec_callback"] = function (callback, ...)
 		if vim.list_contains({ "string", "integer" }, type(callback)) == false then
 			return;
@@ -423,8 +393,6 @@ helpview.actions = {
 	end,
 
 	["__splitview_setup"] = function ()
-		--+${lua}
-
 		if helpview.buf_is_safe(helpview.state.splitview_source) == false then
 			return;
 		end
@@ -458,13 +426,9 @@ helpview.actions = {
 
 		vim.wo[helpview.state.splitview_window].wrap = vim.wo[win].wrap;
 		vim.wo[helpview.state.splitview_window].linebreak = vim.wo[win].linebreak;
-
-		---_
 	end,
 
 	["traceExport"] = function ()
-		---+${lua}
-
 		local scrolloff = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1].textoff;
 		local buf_width = vim.o.columns - scrolloff;
 
@@ -538,8 +502,6 @@ helpview.actions = {
 
 		trace_file:write(table.concat(lines, "\n"));
 		trace_file:close();
-
-		---_
 	end,
 	["traceShow"] = function (from, to)
 		health.trace_open(from, to);
@@ -553,8 +515,6 @@ helpview.actions = {
 	---@param buffer integer?
 	---@param state? { enable: boolean, hybrid_mode: boolean, y: integer }
 	["attach"] = function (buffer, state)
-		---+${lua}
-
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
 		if helpview.can_attach(buffer) == false then
@@ -596,14 +556,11 @@ helpview.actions = {
 		end
 
 		health.__child_indent_de();
-		---_
 	end,
 
 	--- Detaches previewer from a {buffer}.
 	---@param buffer integer?
 	["detach"] = function (buffer)
-		---+${lua}
-
 		---@type integer
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
@@ -636,13 +593,11 @@ helpview.actions = {
 		--- Clear decorations too!
 		helpview.clear(buffer);
 		health.__child_indent_de()
-		---_
 	end,
 
 	--- Disables preview of {buffer}.
 	---@param buffer integer?
 	["disable"] = function (buffer)
-		---+${lua}
 		---@type integer
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
@@ -682,13 +637,11 @@ helpview.actions = {
 		--- Execute the attaching autocmd.
 		helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer))
 		health.__child_indent_de();
-		---_
 	end,
 
 	--- Enables preview of {buffer}.
 	---@param buffer integer?
 	["enable"] = function (buffer)
-		---+${lua}
 		---@type integer
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
@@ -736,14 +689,11 @@ helpview.actions = {
 		helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer))
 		--- Execute the autocmd too.
 		health.__child_indent_de();
-		---_
 	end,
 
 	--- Enables hybrid mode of {buffer}.
 	---@param buffer integer?
 	["hybridEnable"] = function (buffer)
-		---+${lua}
-
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
 		if helpview.actions.__is_attached(buffer) == false then
@@ -770,15 +720,11 @@ helpview.actions = {
 			--- Execute the attaching autocmd.
 			helpview.actions.__exec_callback("on_hybrid_enable", buffer, vim.fn.win_findbuf(buffer))
 		end
-
-		---_
 	end,
 
 	--- Disables hybrid mode of {buffer}.
 	---@param buffer integer?
 	["hybridDisable"] = function (buffer)
-		--+${lua}
-
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
 		if helpview.actions.__is_attached(buffer) == false then
@@ -805,15 +751,11 @@ helpview.actions = {
 			--- Execute the attaching autocmd.
 			helpview.actions.__exec_callback("on_hybrid_disable", buffer, vim.fn.win_findbuf(buffer))
 		end
-
-		---_
 	end,
 
 	--- Opens split view for {buffer}.
 	---@param buffer integer?
 	["splitOpen"] = function (buffer)
-		--++${lua}
-
 		---@type integer
 		buffer = buffer or vim.api.nvim_get_current_buf();
 
@@ -834,12 +776,10 @@ helpview.actions = {
 		helpview.actions.__exec_callback("on_splitview_open", buffer, helpview.state.splitview_buffer, helpview.state.splitview_window);
 
 		helpview.splitview_render();
-		---_
 	end,
 
 	--- Closes split view.
 	["splitClose"] = function ()
-		---+${lua}
 		if type(helpview.state.splitview_source) ~= "number" then
 			--- Splitview's source buffer isn't a number. Why?
 			--- Assuming it's `nil`, we should stop here.
@@ -880,18 +820,13 @@ helpview.actions = {
 		if helpview.state.buffer_states[buffer].enable == true then
 			helpview.render(buffer);
 		end
-		---_
 	end
-
-	---_
 };
 
 --- Holds various functions that you can run
 --- via `:Helpview ...`.
 ---@type { [string]: function }
 helpview.commands = {
-	---+${class}
-
 	["traceExport"] = function ()
 		helpview.actions.traceExport();
 	end,
@@ -911,13 +846,11 @@ helpview.commands = {
 	end,
 
 	["Toggle"] = function ()
-		---+${class}
 		helpview.clean();
 
 		for _, buf in ipairs(helpview.state.attached_buffers) do
 			helpview.commands.toggle(buf);
 		end
-		---_
 	end,
 	["Enable"] = function ()
 		helpview.clean();
@@ -995,7 +928,6 @@ helpview.commands = {
 	end,
 
 	["toggle"] = function (buffer)
-		---+${class}
 		buffer = buffer or vim.api.nvim_get_current_buf();
 		helpview.clean();
 
@@ -1008,7 +940,6 @@ helpview.commands = {
 		else
 			helpview.commands.enable(buffer);
 		end
-		---_
 	end,
 	["enable"] = function (buffer)
 		helpview.actions.enable(buffer)
@@ -1062,8 +993,6 @@ helpview.commands = {
 	end,
 
 	["splitToggle"] = function ()
-		---+${class}
-
 		if type(helpview.state.splitview_source) ~= "number" then
 			helpview.actions.splitOpen();
 		elseif helpview.win_is_safe(helpview.state.splitview_window) == false then
@@ -1072,7 +1001,6 @@ helpview.commands = {
 		else
 			helpview.actions.splitClose();
 		end
-		---_
 	end,
 
 	["splitRedraw"] = function ()
@@ -1097,13 +1025,10 @@ helpview.commands = {
 	-- ["open"] = function ()
 	-- 	require("helpview.links").open();
 	-- end
-	---_
 };
 
 --- Wrapper for `:help`.
 helpview.help = {
-	---+
-
 	---@type integer Overlay buffer.
 	overlay_buffer = nil,
 	---@type integer Preview buffer.
@@ -1124,8 +1049,6 @@ helpview.help = {
 	---@param overlay_opts table
 	---@param preview_opts table
 	__setup = function (self, overlay_opts, preview_opts)
-		---+
-
 		if type(preview_opts.split) == "string" then
 			goto no_overlay;
 		end
@@ -1173,28 +1096,20 @@ helpview.help = {
 		else
 			vim.api.nvim_win_set_config(self.preview_window, preview_opts);
 		end
-
-		---_
 	end,
 
 	--- Closes help window.
 	---@param self table
 	close = function (self)
-		---+
-
 		pcall(vim.api.nvim_del_autocmd, self.leave_autocmd);
 		pcall(vim.api.nvim_del_autocmd, self.resize_autocmd);
 
 		pcall(vim.api.nvim_win_close, self.overlay_window, { force = true });
 		pcall(vim.api.nvim_win_close, self.preview_window, { force = true });
-
-		---_
 	end,
 
 	--- Opens help window
 	open = function (self, tag)
-		---+
-
 		tag = tag or "";
 
 		local overlay_opts = spec.get({ "preview", "overlay_winopts" }, { fallback = {} });
@@ -1291,11 +1206,7 @@ helpview.help = {
 
 		helpview.actions.attach(self.preview_buffer);
 		helpview.render(self.preview_buffer);
-
-		---_
 	end
-
-	---_
 };
 
 --- Setup function.
