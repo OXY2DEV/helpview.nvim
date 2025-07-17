@@ -1,22 +1,7 @@
 local parser = {};
+
 local health = require("helpview.health");
-
 parser.vimdoc = require("helpview.parsers.vimdoc");
-
-parser.ignore_ranges = {};
-
-parser.create_ignore_range = function (language, items)
-	local _r = {};
-
-	if language == "vimdoc" then
-		for _, item in ipairs(items["vimdoc_code_block"] or {}) do
-			table.insert(_r, { item.range.row_start, item.range.row_end })
-		end
-	end
-
-	parser.ignore_ranges = vim.list_extend(parser.ignore_ranges, _r);
-	return _r;
-end
 
 --- Custom `tbl_deep_extend()` that also works on lists.
 ---@param tbl_1 table
@@ -40,7 +25,6 @@ parser.deep_extend = function (tbl_1, tbl_2)
 	return tbl_1;
 end
 
-parser.should_ignore = function (TSTree)
 --- Should a TSTree be ignored.
 ---@param TSTree TSTree
 ---@param ignore_ranges [ integer, integer ][]
@@ -57,8 +41,6 @@ parser.should_ignore = function (TSTree, ignore_ranges)
 	return false;
 end
 
-parser.content = {};
-parser.sorted = {};
 --- Initializes the parsers on the specified buffer.
 --- Parsed data is stored as a "view" in renderer.lua
 ---
@@ -70,18 +52,35 @@ parser.sorted = {};
 ---@return table
 parser.init = function (buffer, from, to)
 	-- Clear the previous contents
-	parser.content = {};
-	parser.sorted = {};
-	parser.ignore_ranges = {};
+
+	local content = {};
+	local sorted = {};
+	local ignore_ranges = {};
 
 	if
 		not pcall(vim.treesitter.get_parser, buffer) or
 		not vim.treesitter.get_parser(buffer)
 	then
-		return parser.content, parser.sorted;
+		return content, sorted;
 	end
 
-	---+${lua, Announce start of parsing}
+	--- Creates a range of lines to ignore.
+	---@param language string
+	---@param items table[]
+	---@return [ integer, integer ][]
+	local function create_ignore_range (language, items)
+		local _r = {};
+
+		if language == "vimdoc" then
+			for _, item in ipairs(items["vimdoc_code_block"] or {}) do
+				table.insert(_r, { item.range.row_start, item.range.row_end })
+			end
+		end
+
+		ignore_ranges = vim.list_extend(ignore_ranges, _r);
+		return _r;
+	end
+
 	---@type integer Start time
 	---@diagnostic disable-next-line: undefined-field
 	local start = vim.uv.hrtime();
@@ -91,27 +90,29 @@ parser.init = function (buffer, from, to)
 		message = string.format("Parsing(start): %d", buffer)
 	});
 	health.__child_indent_in();
-	---_
 
     vim.treesitter.get_parser(buffer):parse(true);
 	local root_parser = vim.treesitter.get_parser(buffer);
+
+	if not root_parser then
+		return parser.content, parser.parsed;
+	end
 
 	root_parser:for_each_tree(function (TSTree, language_tree)
 		language_tree:parse(true);
 
 		local language = language_tree:lang();
-		local content, sorted = {}, {};
+		local _content, _sorted = {}, {};
 
-		if parser[language] and not parser.should_ignore(TSTree) then
-			content, sorted = parser[language].parse(buffer, TSTree, from, to);
-			parser.create_ignore_range(language, sorted)
+		if parser[language] and not parser.should_ignore(TSTree, ignore_ranges) then
+			_content, _sorted = parser[language].parse(buffer, TSTree, from, to);
+			create_ignore_range(language, _sorted)
 		end
 
-		parser.content[language] = vim.list_extend(parser.content[language] or {}, content);
-		parser.sorted[language] = parser.deep_extend(parser.sorted[language] or {}, sorted);
-	end)
+		content[language] = vim.list_extend(content[language] or {}, _content);
+		sorted[language] = parser.deep_extend(sorted[language] or {}, _sorted);
+	end);
 
-	---+${lua, Announce end of parsing}
 	---@type integer End time
 	---@diagnostic disable-next-line: undefined-field
 	local now = vim.uv.hrtime();
@@ -121,9 +122,8 @@ parser.init = function (buffer, from, to)
 		level = 3,
 		message = string.format("Parsing(end, %dms): %d", (now - start) / 1e6, buffer)
 	});
-	---_
 
-	return parser.content, parser.sorted;
+	return content, sorted;
 end
 
 parser.parse = parser.init;
