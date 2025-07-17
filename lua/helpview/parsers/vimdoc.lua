@@ -210,6 +210,11 @@ end
 ---@param text string[]
 ---@param range helpview.parsed.range
 vimdoc.inline_code = function (buffer, _, text, range)
+	if string.match(text[#text], "[^`]$") then
+		-- Code spans that don't end with ` shouldn't
+		-- be rendered.
+		return;
+	end
 
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
