@@ -390,7 +390,20 @@ end
 ---@param text string[]
 ---@param range helpview.parsed.range
 vimdoc.hl = function (buffer, _, text, range)
-	if vim.fn.hlexists(text[1]) == 0 then
+	local can_run, output = pcall(
+		vim.api.nvim_exec2,
+		string.format("hi %s", text[1] or "123"),
+		{ output = true }
+	)
+
+	if can_run == false then
+		return;
+	end
+
+	---@type string The actual group name(group names are case-insensitive).
+	local actual_group = string.match(output.output, "^[a-zA-Z0-9_.@-]+") or "";
+
+	if actual_group ~= text[1] then
 		return;
 	end
 
