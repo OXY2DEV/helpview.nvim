@@ -95,7 +95,7 @@ parser.init = function (buffer, from, to)
 	local root_parser = vim.treesitter.get_parser(buffer);
 
 	if not root_parser then
-		return parser.content, parser.parsed;
+		return content, sorted;
 	end
 
 	root_parser:for_each_tree(function (TSTree, language_tree)
