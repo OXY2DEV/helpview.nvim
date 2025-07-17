@@ -23,9 +23,9 @@ helpview.strict_render = {
 	---@type integer[]
 	on = {},
 
-	--- Renders to {buffer}.
+	--- Renders to `buffer`.
 	--- Disables rendering when the line count
-	--- is >= {max_lines}
+	--- is >= `max_lines`
 	---@param self table
 	---@param buffer integer
 	---@param max_lines integer
@@ -52,7 +52,7 @@ helpview.strict_render = {
 		table.insert(self.on, buffer)
 	end,
 
-	--- Clears the preview of {buffer}.
+	--- Clears the preview of `buffer`.
 	--- Also frees it yp to be rendered again.
 	---@param self table
 	---@param buffer integer
@@ -102,8 +102,8 @@ helpview.clean = function ()
 	end
 end
 
---- Checks if {buffer} is safe.
----@param buffer integer?
+--- Checks if `buffer` is safe.
+---@param buffer? integer
 ---@return boolean
 helpview.buf_is_safe = function (buffer)
 	if type(buffer) ~= "number" then
@@ -117,8 +117,8 @@ helpview.buf_is_safe = function (buffer)
 	return true;
 end
 
---- Checks if {window} is safe.
----@param window integer?
+--- Checks if `window` is safe.
+---@param window? integer
 ---@return boolean
 helpview.win_is_safe = function (window)
 	if type(window) ~= "number" then
@@ -132,8 +132,8 @@ helpview.win_is_safe = function (window)
 	return true;
 end
 
---- Can we attach to {buffer}?
----@param buffer integer?
+--- Can we attach to `buffer`?
+---@param buffer? integer
 ---@return boolean
 helpview.can_attach = function (buffer)
 	helpview.clean();
@@ -147,7 +147,7 @@ helpview.can_attach = function (buffer)
 	return true;
 end
 
---- Can we draw on {buffer}?
+--- Can we draw on `buffer`?
 ---@param buffer integer
 ---@return boolean
 helpview.can_draw = function (buffer)
@@ -162,14 +162,14 @@ helpview.can_draw = function (buffer)
 	return true;
 end
 
---- Clears all previews from {buffer}.
+--- Clears all previews from `buffer`.
 ---@param buffer integer
 helpview.clear = function (buffer)
 	buffer = buffer or vim.api.nvim_get_current_buf();
 	require("helpview.renderer").clear(buffer, 0, -1);
 end
 
---- Renders preview to {buffer}.
+--- Renders preview to `buffer`.
 ---@param buffer integer
 ---@param state? { enable: boolean, hybrid_mode: boolean }
 helpview.render = function (buffer, state)
@@ -358,7 +358,7 @@ helpview.splitview_render = function ()
 end
 
 --- Actions for helpview.
----@type { [string]: function }
+---@type table<string, function>
 helpview.actions = {
 	["__exec_callback"] = function (callback, ...)
 		if vim.list_contains({ "string", "integer" }, type(callback)) == false then
@@ -508,9 +508,9 @@ helpview.actions = {
 	end,
 
 
-	--- Attaches previewer to a {buffer}.
+	--- Attaches previewer to a `buffer`.
 	---
-	--- Optionally allows setting a {state} for
+	--- Optionally allows setting a `state` for
 	--- that buffer.
 	---@param buffer integer?
 	---@param state? { enable: boolean, hybrid_mode: boolean, y: integer }
@@ -558,7 +558,7 @@ helpview.actions = {
 		health.__child_indent_de();
 	end,
 
-	--- Detaches previewer from a {buffer}.
+	--- Detaches previewer from a `buffer`.
 	---@param buffer integer?
 	["detach"] = function (buffer)
 		---@type integer
@@ -595,7 +595,7 @@ helpview.actions = {
 		health.__child_indent_de()
 	end,
 
-	--- Disables preview of {buffer}.
+	--- Disables preview of `buffer`.
 	---@param buffer integer?
 	["disable"] = function (buffer)
 		---@type integer
@@ -639,7 +639,7 @@ helpview.actions = {
 		health.__child_indent_de();
 	end,
 
-	--- Enables preview of {buffer}.
+	--- Enables preview of `buffer`.
 	---@param buffer integer?
 	["enable"] = function (buffer)
 		---@type integer
@@ -691,7 +691,7 @@ helpview.actions = {
 		health.__child_indent_de();
 	end,
 
-	--- Enables hybrid mode of {buffer}.
+	--- Enables hybrid mode of `buffer`.
 	---@param buffer integer?
 	["hybridEnable"] = function (buffer)
 		buffer = buffer or vim.api.nvim_get_current_buf();
@@ -722,7 +722,7 @@ helpview.actions = {
 		end
 	end,
 
-	--- Disables hybrid mode of {buffer}.
+	--- Disables hybrid mode of `buffer`.
 	---@param buffer integer?
 	["hybridDisable"] = function (buffer)
 		buffer = buffer or vim.api.nvim_get_current_buf();
@@ -753,7 +753,7 @@ helpview.actions = {
 		end
 	end,
 
-	--- Opens split view for {buffer}.
+	--- Opens split view for `buffer`.
 	---@param buffer integer?
 	["splitOpen"] = function (buffer)
 		---@type integer
@@ -1109,15 +1109,19 @@ helpview.help = {
 	end,
 
 	--- Opens help window
+	---@param self table
+	---@param tag? string
 	open = function (self, tag)
 		tag = tag or "";
 
 		local overlay_opts = spec.get({ "preview", "overlay_winopts" }, { fallback = {} });
 		local preview_opts = spec.get({ "preview", "preview_winopts" }, { fallback = {} });
 
+		---@return integer
+		---@return integer
 		local function get_size()
 			local w = preview_opts.width or 78;
-			local h = preview_opts.height or vim.o.lines - vim.o.cmdheight;
+			local h = preview_opts.height or (vim.o.lines - vim.o.cmdheight);
 
 			if w <= 1 then
 				w = math.floor(w * vim.o.columns);
@@ -1201,7 +1205,6 @@ helpview.help = {
 		});
 
 		helpview.actions.__exec_callback("on_help_open", self.preview_buffer, self.preview_window, self.overlay_preview, self.overlay_window);
-
 		vim.cmd("help " .. tag);
 
 		helpview.actions.attach(self.preview_buffer);
@@ -1220,3 +1223,4 @@ helpview.setup = function (user_config)
 end
 
 return helpview;
+-- vim:foldmethod=indent:

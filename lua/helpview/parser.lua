@@ -18,6 +18,10 @@ parser.create_ignore_range = function (language, items)
 	return _r;
 end
 
+--- Custom `tbl_deep_extend()` that also works on lists.
+---@param tbl_1 table
+---@param tbl_2 table
+---@return table
 parser.deep_extend = function (tbl_1, tbl_2)
 	for k, v in pairs(tbl_2) do
 		if tbl_1[k] then
@@ -37,9 +41,14 @@ parser.deep_extend = function (tbl_1, tbl_2)
 end
 
 parser.should_ignore = function (TSTree)
+--- Should a TSTree be ignored.
+---@param TSTree TSTree
+---@param ignore_ranges [ integer, integer ][]
+---@return boolean
+parser.should_ignore = function (TSTree, ignore_ranges)
 	local t_start, _, t_stop, _ = TSTree:root():range();
 
-	for _, range in ipairs(parser.ignore_ranges) do
+	for _, range in ipairs(ignore_ranges) do
 		if t_start >= range[1] and t_stop <= range[2] then
 			return true;
 		end
@@ -50,8 +59,7 @@ end
 
 parser.content = {};
 parser.sorted = {};
-
---- Initializes the parsers on the specified buffer
+--- Initializes the parsers on the specified buffer.
 --- Parsed data is stored as a "view" in renderer.lua
 ---
 ---@param buffer number
@@ -75,6 +83,7 @@ parser.init = function (buffer, from, to)
 
 	---+${lua, Announce start of parsing}
 	---@type integer Start time
+	---@diagnostic disable-next-line: undefined-field
 	local start = vim.uv.hrtime();
 
 	health.notify("trace", {
@@ -104,6 +113,7 @@ parser.init = function (buffer, from, to)
 
 	---+${lua, Announce end of parsing}
 	---@type integer End time
+	---@diagnostic disable-next-line: undefined-field
 	local now = vim.uv.hrtime();
 
 	health.__child_indent_de();

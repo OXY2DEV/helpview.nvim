@@ -1,4 +1,5 @@
 local vimdoc = {};
+
 local spec = require("helpview.spec");
 local filetypes = require("helpview.filetypes");
 local utils = require("helpview.utils");
@@ -23,8 +24,6 @@ local function has_decorations(config)
 end
 
 vimdoc.__fix_indent = function (buffer, item, offset)
-	---+
-
 	offset = offset or 0;
 
 	local range = item.range;
@@ -53,23 +52,19 @@ vimdoc.__fix_indent = function (buffer, item, offset)
 			{ string.rep(" ", width - (txt_width + offset)) }
 		}
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__argument
+---@param item helpview.parsed.vimdoc.argument
 vimdoc.argument = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.arguments?
+	---@type helpview.config.vimdoc.arguments?
 	local main_config = spec.get({ "vimdoc", "arguments" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -153,16 +148,12 @@ vimdoc.argument = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__code_block
+---@param item helpview.parsed.vimdoc.code_block
 vimdoc.code_block = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.code_blocks
+	---@type helpview.config.vimdoc.code_blocks
 	local config = spec.get({ "vimdoc", "code_blocks" });
 	local range = item.range;
 
@@ -175,8 +166,6 @@ vimdoc.code_block = function (buffer, item)
 	---@param line string
 	---@return { block_hl: string }
 	local function get_line_config (line)
-		---+
-
 		---@type { block_hl: string }
 		local line_config;
 
@@ -198,7 +187,6 @@ vimdoc.code_block = function (buffer, item)
 		end
 
 		return utils.tostatic(line_config, { args = { buffer, line } });
-		---_
 	end
 
 	local decorations = filetypes.get(item.language);
@@ -308,16 +296,12 @@ vimdoc.code_block = function (buffer, item)
 	-- if item.padding_bottom == true then
 	-- else
 	-- end
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__heading
+---@param item helpview.parsed.vimdoc.heading
 vimdoc.heading = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.headings?
+	---@type helpview.config.vimdoc.headings?
 	local main_config = spec.get({ "vimdoc", "headings" });
 
 	if not main_config then
@@ -326,7 +310,7 @@ vimdoc.heading = function (buffer, item)
 		return;
 	end
 
-	---@type headings.opts
+	---@type helpview.config.vimdoc.headings.opts
 	local config = main_config["heading_" .. item.level];
 	local range = item.range;
 
@@ -362,15 +346,12 @@ vimdoc.heading = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__heading
+---@param item helpview.parsed.vimdoc.heading
 vimdoc.heading_no_delim = function (buffer, item)
-	---+
-
-	---@type vimdoc.headings?
+	---@type helpview.config.vimdoc.headings?
 	local main_config = spec.get({ "vimdoc", "headings" });
 
 	if not main_config then
@@ -379,7 +360,7 @@ vimdoc.heading_no_delim = function (buffer, item)
 		return;
 	end
 
-	---@type headings.opts
+	---@type helpview.config.vimdoc.headings.opts
 	local config = main_config["heading_" .. item.level];
 	local range = item.range;
 
@@ -419,16 +400,12 @@ vimdoc.heading_no_delim = function (buffer, item)
 			{ label[2], utils.set_hl(label_hl[2] or config.hl) },
 		},
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__hl
+---@param item helpview.parsed.vimdoc.hl
 vimdoc.hl = function (buffer, item)
-	---+
-
-	---@type vimdoc.highlights?
+	---@type helpview.config.vimdoc.highlights?
 	local config = spec.get({ "vimdoc", "highlight_groups" });
 	local range = item.range;
 
@@ -462,7 +439,7 @@ vimdoc.hl = function (buffer, item)
 	});
 
 	if has_decorations(config) then
-		vimdoc.__fix_indent(buffer, item, vim.fn.strdisplaywidth(ext));
+		vimdoc.__fix_indent(buffer, item, 0);
 	end
 
 	vim.api.nvim_buf_set_extmark(buffer, vimdoc.ns, range.row_start, range.col_start, {
@@ -471,15 +448,11 @@ vimdoc.hl = function (buffer, item)
 
 		hl_group = item.group_name
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__hr
+---@param item helpview.parsed.vimdoc.hr
 vimdoc.hr = function (buffer, item)
-	---+${lua}
-
 	local config = spec.get({ "vimdoc", "horizontal_rules" });
 	local range = item.range;
 
@@ -503,11 +476,11 @@ vimdoc.hr = function (buffer, item)
 
 	for _, part in ipairs(config.parts or {}) do
 		if part.type == "text" then
-			---@cast part hr.text
+			---@cast part helpview.config.vimdoc.hr.text
 
 			table.insert(_v, { part.text, utils.set_hl(part.hl) });
 		elseif part.type == "repeating" then
-			---@cast part hr.repeating
+			---@cast part helpview.config.vimdoc.hr.repeating
 
 			local rep = part.repeat_amount or 0;
 
@@ -542,15 +515,12 @@ vimdoc.hr = function (buffer, item)
 
 		hl_mode = "combine"
 	});
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__inline_code
+---@param item helpview.parsed.vimdoc.inline_code
 vimdoc.inline_code = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.inline_codes?
+	---@type helpview.config.vimdoc.inline_codes?
 	local config = spec.get({ "vimdoc", "inline_codes" });
 	local range = item.range;
 
@@ -597,23 +567,19 @@ vimdoc.inline_code = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__keycode
+---@param item helpview.parsed.vimdoc.keycode
 vimdoc.keycode = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.keycodes?
+	---@type helpview.config.vimdoc.keycodes?
 	local main_config = spec.get({ "vimdoc", "keycodes" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -672,16 +638,12 @@ vimdoc.keycode = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__modeline
+---@param item helpview.parsed.vimdoc.modeline
 vimdoc.modeline = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.modeline?
+	---@type helpview.config.vimdoc.modelines?
 	local config = spec.get({ "vimdoc", "modelines" });
 	local range = item.range;
 
@@ -751,23 +713,19 @@ vimdoc.modeline = function (buffer, item)
 
 		hl_mode = "combine"
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__note
+---@param item helpview.parsed.vimdoc.note
 vimdoc.note = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.notes?
+	---@type helpview.config.vimdoc.notes?
 	local main_config = spec.get({ "vimdoc", "notes" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -812,23 +770,19 @@ vimdoc.note = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__optionlink
+---@param item helpview.parsed.vimdoc.optionlink
 vimdoc.optionlink = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.optionlinks?
+	---@type helpview.config.vimdoc.optionlinks?
 	local main_config = spec.get({ "vimdoc", "optionlinks" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -887,23 +841,19 @@ vimdoc.optionlink = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__tag
+---@param item helpview.parsed.vimdoc.tag
 vimdoc.tag = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.tags?
+	---@type helpview.config.vimdoc.tags?
 	local main_config = spec.get({ "vimdoc", "tags" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.tag, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -966,23 +916,19 @@ vimdoc.tag = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__taglink
+---@param item helpview.parsed.vimdoc.taglink
 vimdoc.taglink = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.taglinks?
+	---@type helpview.config.vimdoc.taglinks?
 	local main_config = spec.get({ "vimdoc", "taglinks" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -1045,23 +991,19 @@ vimdoc.taglink = function (buffer, item)
 
 		hl_group = utils.set_hl(config.hl)
 	});
-
-	---_
 end
 
 ---@param buffer integer
----@param item vimdoc.__taglink
+---@param item helpview.parsed.vimdoc.taglink
 vimdoc.url = function (buffer, item)
-	---+${lua}
-
-	---@type vimdoc.taglinks?
+	---@type helpview.config.vimdoc.taglinks?
 	local main_config = spec.get({ "vimdoc", "urls" });
 
 	if not main_config then
 		return;
 	end
 
-	---@type vimdoc.generic?
+	---@type helpview.config.vimdoc.inline?
 	local config = utils.match(main_config, item.label, {
 		ignore_keys = { "enable", "default" }
 	});
@@ -1119,16 +1061,12 @@ vimdoc.url = function (buffer, item)
 			hl_group = utils.set_hl(config.hl)
 		});
 	end
-
-	---_
 end
 
 --- Renders content.
 ---@param buffer integer
 ---@param content table
 vimdoc.render = function (buffer, content)
-	---+
-
 	--- Clear the message namespace.
 	vimdoc.__message_clear(buffer, content)
 
@@ -1154,16 +1092,12 @@ vimdoc.render = function (buffer, content)
 			});
 		end
 	end
-
-	---_
 end
 
 --- Clears help message namespace.
 ---@param buffer integer
 ---@param content table[]
 vimdoc.__message_clear = function (buffer, content)
-	---+
-
 	--- Map of namespace IDs.
 	---@type { [string]: integer }
 	local namespaces = vim.api.nvim_get_namespaces();
@@ -1185,8 +1119,6 @@ vimdoc.__message_clear = function (buffer, content)
 
 		vim.api.nvim_buf_clear_namespace(buffer, namespaces["nvim.vimdoc.run_message"], from, to);
 	end
-
-	---_
 end
 
 --- Clears preview decorations.

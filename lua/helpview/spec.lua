@@ -1,12 +1,11 @@
 local spec = {};
+
 local health = require("helpview.health");
 local utils = require("helpview.utils");
 
 --- Default configuration table.
 ---@type helpview.config
 spec.default = {
-	---+${lua}
-
 	renderers = {},
 
 	preview = {
@@ -256,7 +255,7 @@ spec.default = {
 				hl = "@string.special.url.vimdoc",
 			},
 
-			---+${lua, Github sites}
+			--- NOTE(@OXY2DEV): Github sites.
 
 			["github%.com/[%a%d%-%_%.]+%/?$"] = {
 				--- github.com/<user>
@@ -343,8 +342,7 @@ spec.default = {
 				end
 			},
 
-			---_
-			---+${lua, Commonly used sites by programmers}
+			--- NOTE(@OXY2DEV): Commonly used sites by programmers.
 
 			["developer%.mozilla%.org"] = {
 				priority = -9999,
@@ -458,8 +456,6 @@ spec.default = {
 				hl = "HelpviewPalette2Fg"
 			},
 
-			---_
-
 			["neovim%.io/doc/user/.*#%_?.*$"] = {
 				icon = " ",
 				hl = "HelpviewPalette4Fg",
@@ -558,8 +554,6 @@ spec.default = {
 			},
 		}
 	},
-
-	---_
 };
 
 --- User configuration table.
@@ -568,13 +562,9 @@ spec.config = vim.deepcopy(spec.default);
 
 --- Table containing functions for
 --- backwards compatibility
----@type { [string]: fun(config: any): table}
+---@type table<string, fun(config: any): table>
 spec.fixup = {
-	---+
-
 	["modes"] = function (value)
-		---+
-
 		health.notify("deprecation", {
 			option = "modes",
 			alter = "preview → modes"
@@ -585,13 +575,9 @@ spec.fixup = {
 				modes = value
 			}
 		};
-
-		---_
 	end,
 
 	["hybrid_modes"] = function (value)
-		---+
-
 		health.notify("deprecation", {
 			option = "hybrid_modes",
 			alter = "preview → hybrid_modes"
@@ -602,13 +588,9 @@ spec.fixup = {
 				hybrid_modes = value
 			}
 		};
-
-		---_
 	end,
 
 	["buf_ignore"] = function (value)
-		---+
-
 		health.notify("deprecation", {
 			option = "buf_ignore",
 			alter = "preview → ignore_buftypes"
@@ -619,13 +601,9 @@ spec.fixup = {
 				ignore_buftypes = value
 			}
 		};
-
-		---_
 	end,
 
 	["callbacks"] = function (value)
-		---+
-
 		health.notify("deprecation", {
 			option = "callbacks",
 			alter = "preview → callbacks"
@@ -636,13 +614,9 @@ spec.fixup = {
 				callbacks = value
 			}
 		};
-
-		---_
 	end,
 
 	["arguments"] = function (config)
-		---+
-
 		local _o = {
 			default = {}
 		};
@@ -671,13 +645,9 @@ spec.fixup = {
 				arguments = _o
 			}
 		};
-
-		---_
 	end,
 
 	["keycodes"] = function (config)
-		---+
-
 		local _o = {
 			default = {}
 		};
@@ -706,13 +676,9 @@ spec.fixup = {
 				keycodes = _o
 			}
 		};
-
-		---_
 	end,
 
 	["mention_links"] = function (config)
-		---+
-
 		local _o = {
 			default = {}
 		};
@@ -741,13 +707,9 @@ spec.fixup = {
 				keycodes = _o
 			}
 		};
-
-		---_
 	end,
 
 	["modelines"] = function (config)
-		---+
-
 		for k, _ in pairs(config) do
 			health.notify("deprecation", {
 				option = "modelines → " .. k,
@@ -760,19 +722,13 @@ spec.fixup = {
 		end
 
 		return {};
-
-		---_
 	end
-
-	---_
 };
 
 --- Tries to fix deprecated config spec
 ---@param config table?
----@return table
+---@return helpview.config
 spec.fix_config = function (config)
-	---+${lua}
-
 	if type(config) ~= "table" then
 		return {};
 	end
@@ -805,27 +761,20 @@ spec.fix_config = function (config)
 	end
 
 	return vim.tbl_deep_extend("force", main, fixed);
-	---_
 end
 
 --- Updates user configuration table
 ---@param config helpview.config
 spec.setup = function (config)
-	---+
-
 	config = spec.fix_config(config);
 	spec.config = vim.tbl_deep_extend("force", spec.config, config);
-
-	---_
 end
 
 --- Gets configuration option.
 ---@param keys string[]
----@param opts? { fallback: any, source: table?, ignore_enable : boolean }
+---@param opts? { fallback: any, source: table?, ignore_enable: boolean }
 ---@return any
 spec.get = function (keys, opts)
-	---+
-
 	keys = keys or {};
 	opts = opts or {};
 
@@ -856,8 +805,7 @@ spec.get = function (keys, opts)
 	else
 		return val or opts.fallback;
 	end
-
-	---_
 end
 
 return spec;
+--- vim:foldmethod=indent:

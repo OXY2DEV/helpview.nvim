@@ -1,7 +1,21 @@
+---@class helpview.icon Icon.
+---
+---@field name? string Filetype name(`nil` for default).
+---
+---@field sign string
+---@field sign_hl string
+---
+---@field icon string
+---@field icon_hl string
+---
+---@field border_hl string
+
+------------------------------------------------------------------------------
+
 local fts = {};
 
+---@type table<string, helpview.icon>
 fts.styles = {
-	---+${class}
 	["default"]                 = { name = nil,                    sign = "󰻺 ", sign_hl = "HelpviewPalette0Sign", icon = "󰻺 ", icon_hl = "HelpviewIcon0", border_hl = "HelpviewPalette0Fg" },
 	["nosyntax"]                = { name = "Unknown",              sign = "󰡯 ", sign_hl = "HelpviewPalette0Sign", icon = "󰡯 ", icon_hl = "HelpviewIcon0", border_hl = "HelpviewPalette0Fg" },
 
@@ -713,12 +727,11 @@ fts.styles = {
 	["zir"]                     = { name = "Zir",                  sign = "󰯂 ", sign_hl = "HelpviewPalette6Sign", icon = "󰯂 ", icon_hl = "HelpviewIcon6", border_hl = "HelpviewPalette6Fg" },
 	["zserio"]                  = { name = "Zserio",               sign = "󰯂 ", sign_hl = "HelpviewPalette6Sign", icon = "󰯂 ", icon_hl = "HelpviewIcon6", border_hl = "HelpviewPalette6Fg" },
 	["zsh"]                     = { name = "Zsh",                  sign = " ", sign_hl = "HelpviewPalette4Sign", icon = " ", icon_hl = "HelpviewIcon4", border_hl = "HelpviewPalette4Fg" }
-	---_
 };
 
 --- Gets Icons
----@param ft string?
----@return { name: string, sign: string, sign_hl: string, icon: string, icon_hl: string, border_hl: string }
+---@param ft? string
+---@return helpview.icon
 fts.get = function (ft)
 	local _ft = ft;
 
@@ -764,3 +777,4 @@ fts.get = function (ft)
 end
 
 return fts;
+--- vim:foldmethod=indent:
