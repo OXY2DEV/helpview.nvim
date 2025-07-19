@@ -18,6 +18,7 @@ health.notify("trace", {
 
 --- Initiate the highlight groups.
 require("helpview.highlights").setup();
+vim.g.__helpview_hl_group_map = vim.api.nvim_get_hl(0, {});
 
 health.notify("trace", {
 	level = 5,
@@ -31,6 +32,7 @@ vim.api.nvim_create_autocmd({ "ColorScheme" }, {
 		---+
 
 		require("helpview.highlights").setup();
+		vim.g.__helpview_hl_group_map = vim.api.nvim_get_hl(0, {});
 
 		health.notify("trace", {
 			level = 5,

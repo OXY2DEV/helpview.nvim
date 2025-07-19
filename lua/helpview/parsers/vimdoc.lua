@@ -390,20 +390,12 @@ end
 ---@param text string[]
 ---@param range helpview.parsed.range
 vimdoc.hl = function (buffer, _, text, range)
-	local can_run, output = pcall(
-		vim.api.nvim_exec2,
-		string.format("hi %s", text[1] or "123"),
-		{ output = true }
-	)
-
-	if can_run == false then
+	if not vim.g.__helpview_hl_group_map then
+		-- Do not show highlight groups if we don't
+		-- have the highlight group map.
 		return;
-	end
-
-	---@type string The actual group name(group names are case-insensitive).
-	local actual_group = string.match(output.output, "^[a-zA-Z0-9_.@-]+") or "";
-
-	if actual_group ~= text[1] then
+	elseif not text[1] or not vim.g.__helpview_hl_group_map[text[1]] then
+		-- Highlight group doesn't exist.
 		return;
 	end
 
