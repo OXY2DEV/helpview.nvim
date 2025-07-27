@@ -272,6 +272,9 @@ helpview.render = function (buffer, state)
 			end
 		end
 	end
+
+	-- TODO: Is this really needed?
+	helpview.actions.__exec_callback("__post_render", buffer, vim.fn.win_findbuf(buffer));
 end
 
 --- Updates cursor position in splitview.
