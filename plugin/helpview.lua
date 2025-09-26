@@ -16,17 +16,13 @@ health.notify("trace", {
 	message = "Start"
 });
 
---- Initiate the highlight groups.
-require("helpview.highlights").setup();
-vim.g.__helpview_hl_group_map = vim.api.nvim_get_hl(0, {});
-
 health.notify("trace", {
 	level = 5,
 	message = "Created highlight groups"
 });
 
 --- Update highlight groups on colorscheme changes.
-vim.api.nvim_create_autocmd({ "ColorScheme" }, {
+vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
 	group = helpview.au,
 	callback = function ()
 		---+

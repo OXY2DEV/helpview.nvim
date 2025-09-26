@@ -357,6 +357,21 @@ end
 vimdoc.tag = function (buffer, _, text, range)
 	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
 
+	if string.match(text[1], "%*hl%-.+%*") then
+		local next_line = vim.api.nvim_buf_get_lines(buffer, range.row_start + 1, range.row_start + 2, false)[1];
+		local spaces, hl = string.match(next_line or "", "^(%s*)([a-zA-Z0-9_.@-]+)")
+
+		if hl then
+			vimdoc.internal_hl(buffer, _, { hl }, {
+				row_start = range.row_start + 1,
+				row_end = range.row_start + 1,
+
+				col_start = #spaces,
+				col_end = #spaces + vim.fn.strcharlen(hl);
+			});
+		end
+	end
+
 	vimdoc.insert({
 		class = "vimdoc_tag",
 
@@ -386,16 +401,30 @@ vimdoc.taglink = function (buffer, _, text, range)
 	});
 end
 
+--- Word processor for `default` help files.
+---@param text string[]
+---@param range helpview.parsed.range
+vimdoc.internal_hl = function (buffer, _, text, range)
+	local after = vim.api.nvim_buf_get_text(buffer, range.row_start, range.col_end, range.row_start, -1, {})[1] or "";
+
+	vimdoc.insert({
+		class = "vimdoc_hl",
+
+		group_name = text[1],
+		after = after:match("^	+"),
+
+		text = text,
+		range = range
+	});
+end
+
 --- Word processor.
 ---@param text string[]
 ---@param range helpview.parsed.range
 vimdoc.hl = function (buffer, _, text, range)
 	if not vim.g.__helpview_hl_group_map then
-		-- Do not show highlight groups if we don't
-		-- have the highlight group map.
 		return;
 	elseif not text[1] or not vim.g.__helpview_hl_group_map[text[1]] then
-		-- Highlight group doesn't exist.
 		return;
 	end
 
@@ -479,6 +508,16 @@ vimdoc.parse = function (buffer, TSTree, from, to)
 
 		if not capture_name:match("^vimdoc%.") then
 			goto continue
+		elseif capture_name == "vimdoc.hl" then
+			local runtime = vim.pesc(
+				vim.fn.expand("$VIMRUNTIME")
+			);
+			local bufname = vim.api.nvim_buf_get_name(buffer);
+
+			if string.match(bufname, "^" .. runtime) then
+				-- Use `vimdoc.default_hl()` for the builtin help files.
+				goto continue;
+			end
 		end
 
 		---@type string?
