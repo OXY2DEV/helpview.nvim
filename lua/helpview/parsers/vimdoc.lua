@@ -48,7 +48,7 @@ vimdoc.code_block = function (buffer, TSNode, text, range)
 	local language;
 
 	if first_child:type() == "language" then
-		language = vim.treesitter.get_node_text(first_child, buffer):gsub("^%>", "");
+		language = vim.treesitter.get_node_text(first_child, buffer):gsub("^%>", ""):gsub("%s+$", "");
 	end
 
 	local function top_stat ()
