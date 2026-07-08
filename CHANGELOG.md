@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.2.0](https://github.com/OXY2DEV/helpview.nvim/compare/v2.1.2...v2.2.0) (2026-05-14)
+
+
+### Features
+
+* **callbacks:** Added `__post_render` callback ([10a4fc2](https://github.com/OXY2DEV/helpview.nvim/commit/10a4fc23876c879bcd364b7d21564e905ff49d36)), closes [#33](https://github.com/OXY2DEV/helpview.nvim/issues/33)
+
+
+### Bug Fixes
+
+* **parser_vimdoc:** Fixed a bug with highlight group parsing reseting colorscheme ([30ce27a](https://github.com/OXY2DEV/helpview.nvim/commit/30ce27a4edd708500b94b26898cc07ec4434f896))
+* **parser_vimdoc:** Made highlight group name detection stricter ([d6f0978](https://github.com/OXY2DEV/helpview.nvim/commit/d6f0978ac2b17aa9b8c79b0bf9ceb8313ccaa983)), closes [#32](https://github.com/OXY2DEV/helpview.nvim/issues/32)
+* **parsers, vimdoc:** Do not include trailing spaces in code block language name ([0057599](https://github.com/OXY2DEV/helpview.nvim/commit/0057599e169ea6ffd53fef77f279cb13b61e174a))
+* **renderer_vimdoc:** Fixed a bug with inline codes with missing closing \` being rendered ([b7dad2e](https://github.com/OXY2DEV/helpview.nvim/commit/b7dad2e3bbf82c508819819b53b731eb60637aa9))
+* **utils:** Added support for `nvim-treesitter:main` ([3be2f9f](https://github.com/OXY2DEV/helpview.nvim/commit/3be2f9f08340209329f837110c8a714fdd91cc43))
+
 ## [2.1.2](https://github.com/OXY2DEV/helpview.nvim/compare/v2.1.1...v2.1.2) (2025-04-20)
 
 
